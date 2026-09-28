@@ -10,7 +10,7 @@ export async function rewriteDocumentQuery(question: string, history: ChatMessag
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       question,
-      history: history.slice(-8).map(({ role, content }) => ({ role, content })),
+      history: history.slice(-6).map(({ role, content }) => ({ role, content: content.slice(0, 600) })),
     }),
   })
 
@@ -40,7 +40,7 @@ export async function askDocument(
         text,
         score,
       })),
-      history: history.slice(-8).map(({ role, content }) => ({ role, content })),
+      history: history.slice(-4).map(({ role, content }) => ({ role, content: content.slice(0, 600) })),
     }),
   })
 

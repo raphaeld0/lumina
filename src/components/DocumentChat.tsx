@@ -20,6 +20,7 @@ function newMessageId() {
 export function DocumentChat({ conversationId, documents, messages, onMessagesChange: setMessages, onNewConversation }: DocumentChatProps) {
   const [question, setQuestion] = useState('')
   const [isAnswering, setIsAnswering] = useState(false)
+  const [answerStage, setAnswerStage] = useState<'rewriting' | 'searching' | 'answering' | null>(null)
   const [isListening, setIsListening] = useState(false)
   const [voiceError, setVoiceError] = useState('')
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
@@ -48,6 +49,7 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
     setMessages((current) => [...current, userMessage])
     setQuestion('')
     setIsAnswering(true)
+    setAnswerStage('rewriting')
 
     try {
       const contextualSearch = buildContextualSearchQuery(content, conversationBeforeQuestion)
@@ -61,7 +63,8 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
         // A busca local continua disponível caso a reescrita não responda.
       }
 
-      const chunks = await searchRelevantChunks(conversationId, rewrittenQuery, 5)
+      setAnswerStage('searching')
+      const chunks = await searchRelevantChunks(conversationId, rewrittenQuery, 3)
       const questionForModel = resolveAcronymsInQuestion(rewrittenQuery, chunks)
 
       if (chunks.length === 0) {
@@ -77,6 +80,7 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
         return
       }
 
+      setAnswerStage('answering')
       const result = await askDocument(
         questionForModel,
         chunks,
@@ -101,7 +105,10 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
         sources: [],
       }])
     } finally {
-      if (isMountedRef.current) setIsAnswering(false)
+      if (isMountedRef.current) {
+        setIsAnswering(false)
+        setAnswerStage(null)
+      }
     }
   }
 
@@ -260,7 +267,14 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
             <span className="message-avatar"><Bot size={17} /></span>
             <div className="message-body">
               <span className="message-author">Lumina</span>
-              <div className="typing-indicator"><i /><i /><i /></div>
+              <div className="answer-progress">
+                <div className="typing-indicator"><i /><i /><i /></div>
+                <span>{answerStage === 'rewriting'
+                  ? 'Entendendo sua pergunta…'
+                  : answerStage === 'searching'
+                    ? 'Buscando nos documentos…'
+                    : 'Gerando resposta com as fontes…'}</span>
+              </div>
             </div>
           </article>
         )}

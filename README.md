@@ -18,14 +18,14 @@ O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a 
 - Cada trecho mantém a conversa, o identificador do documento, nome do arquivo, página e posição.
 - Geração local de embeddings semânticos de 768 dimensões com o modelo multilíngue `nomic-embed-text-v2-moe` no Ollama.
 - Persistência dos textos e embeddings no IndexedDB do navegador.
-- Busca dos cinco trechos mais relevantes entre todos os PDFs da conversa usando similaridade de cosseno.
+- Busca dos três trechos mais relevantes entre todos os PDFs da conversa usando similaridade de cosseno.
 - Interface para fazer perguntas e visualizar página, texto e relevância de cada resultado.
 
 O arquivo PDF original não é armazenado. O texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem no IndexedDB deste navegador.
 
 ## Parte 3 — respostas com RAG
 
-- Recuperação dos cinco trechos mais próximos da pergunta.
+- Recuperação dos três trechos mais próximos da pergunta para reduzir o tempo de resposta local.
 - Envio da pergunta, histórico recente e trechos recuperados para um modelo local no Ollama.
 - Respostas limitadas às informações presentes nas fontes.
 - Retorno estruturado com indicação de evidência suficiente e IDs das fontes.

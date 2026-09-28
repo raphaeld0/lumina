@@ -237,6 +237,8 @@ button { color: inherit; }
 .typing-indicator i { width: 5px; height: 5px; border-radius: 50%; background: #909a8d; animation: typing-bounce 1.2s infinite ease-in-out; }
 .typing-indicator i:nth-child(2) { animation-delay: .15s; }
 .typing-indicator i:nth-child(3) { animation-delay: .3s; }
+.answer-progress { display: flex; align-items: center; gap: 9px; }
+.answer-progress > span { color: var(--muted); font-size: 10px; }
 .chat-composer { position: relative; display: grid; grid-template-columns: 1fr auto auto; align-items: end; gap: 8px; border-top: 1px solid #e7e9e2; background: white; padding: 13px 17px 25px; }
 .chat-composer textarea { min-height: 44px; max-height: 110px; resize: vertical; border: 1px solid #d9dcd4; border-radius: 11px; outline: 0; padding: 12px 13px; color: var(--ink); background: #fdfdfb; font-size: 12px; line-height: 1.5; transition: border-color .2s, box-shadow .2s; }
 .chat-composer textarea:focus { border-color: #9caa98; box-shadow: 0 0 0 3px rgba(102,122,99,.08); }

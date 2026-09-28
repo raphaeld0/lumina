@@ -166,7 +166,7 @@ export async function rewriteSearchQuery(baseUrl: string, request: QueryRewriteR
         stream: false,
         think: false,
         format: REWRITE_QUERY_JSON_SCHEMA,
-        options: { temperature: 0 },
+        options: { temperature: 0, num_predict: 100 },
         messages: [
           { role: 'system', content: QUERY_REWRITE_INSTRUCTIONS },
           { role: 'user', content: 'CONSULTA FINAL A REESCREVER: oq é IA?' },
@@ -218,7 +218,7 @@ export async function answerWithRag(baseUrl: string, request: RagRequest, model:
         stream: false,
         think: false,
         format: MODEL_ANSWER_JSON_SCHEMA,
-        options: { temperature: 0 },
+        options: { temperature: 0, num_predict: 350 },
         messages: [
           { role: 'system', content: SYSTEM_INSTRUCTIONS },
           { role: 'user', content: buildRagPrompt(request) },
