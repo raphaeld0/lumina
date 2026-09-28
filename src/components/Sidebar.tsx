@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
-import { Check, FileText, Menu, MessageSquareText, Moon, Pencil, Plus, Search, Sun, Trash2, X } from 'lucide-react'
+import { Check, FileText, Menu, MessageSquareText, Moon, PanelLeftClose, Pencil, Plus, Search, Sun, Trash2, X } from 'lucide-react'
 import type { ConversationSummary } from '../types'
 import { Brand } from './Brand'
 
 type SidebarProps = {
   isOpen: boolean
+  isCollapsed: boolean
   studentName: string
   theme: 'light' | 'dark'
   conversations: ConversationSummary[]
   activeConversationId?: string
   onClose: () => void
+  onCollapse: () => void
   onNewConversation: () => void
   onSelectConversation: (conversationId: string) => void
   onRenameConversation: (conversationId: string) => void
@@ -20,11 +22,13 @@ type SidebarProps = {
 
 export function Sidebar({
   isOpen,
+  isCollapsed,
   studentName,
   theme,
   conversations,
   activeConversationId,
   onClose,
+  onCollapse,
   onNewConversation,
   onSelectConversation,
   onRenameConversation,
@@ -46,10 +50,13 @@ export function Sidebar({
   return (
     <>
       <button className={`sidebar-backdrop ${isOpen ? 'is-visible' : ''}`} aria-label="Fechar menu" onClick={onClose} />
-      <aside className={`sidebar ${isOpen ? 'is-open' : ''}`}>
+      <aside className={`sidebar ${isOpen ? 'is-open' : ''} ${isCollapsed ? 'is-collapsed' : ''}`}>
         <div className="sidebar-top">
           <Brand />
-          <button className="icon-button close-sidebar" onClick={onClose} aria-label="Fechar menu"><X size={20} /></button>
+          <div className="sidebar-top-actions">
+            <button className="icon-button collapse-sidebar" onClick={onCollapse} aria-label="Recolher barra lateral" title="Recolher barra lateral"><PanelLeftClose size={19} /></button>
+            <button className="icon-button close-sidebar" onClick={onClose} aria-label="Fechar menu"><X size={20} /></button>
+          </div>
         </div>
 
         <button className="new-conversation" onClick={onNewConversation}><Plus size={17} />Nova conversa</button>

@@ -35,9 +35,14 @@ button { color: inherit; }
   border-right: 1px solid var(--line);
   background: #f0f1ec;
   padding: 28px 18px 20px;
+  transition: transform .25s ease;
 }
+.sidebar.is-collapsed { transform: translateX(-100%); }
 
 .sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 0 9px; }
+.sidebar-top-actions { display: flex; align-items: center; gap: 2px; }
+.collapse-sidebar, .close-sidebar { width: 32px; height: 32px; color: var(--muted); }
+.collapse-sidebar:hover, .close-sidebar:hover { background: var(--sage-pale); color: var(--sage-dark); }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand-mark { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 9px; color: white; background: var(--sage); }
 .brand-name { font-family: 'DM Serif Display', serif; font-size: 25px; letter-spacing: -.5px; }
@@ -98,6 +103,9 @@ button { color: inherit; }
 .sidebar-backdrop { display: none; }
 
 .main-content { position: relative; display: flex; min-height: 100vh; width: calc(100% - 264px); margin-left: 264px; flex-direction: column; }
+.main-content.is-sidebar-collapsed { width: 100%; margin-left: 0; }
+.sidebar-expand-button { position: fixed; top: 18px; left: 18px; z-index: 10; display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--muted); box-shadow: 0 5px 18px rgba(47,57,44,.08); cursor: pointer; }
+.sidebar-expand-button:hover { color: var(--sage-dark); background: var(--sage-pale); }
 .mobile-header { display: none; }
 .upload-section { width: min(720px, calc(100% - 48px)); margin: auto; padding: 72px 0 42px; text-align: center; }
 .eyebrow { display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--rust); font-size: 11px; font-weight: 700; letter-spacing: .15em; }
@@ -329,6 +337,7 @@ button { color: inherit; }
   .sidebar-backdrop { position: fixed; inset: 0; z-index: 19; display: block; visibility: hidden; border: 0; background: rgba(24,27,23,.3); opacity: 0; transition: opacity .25s, visibility .25s; }
   .sidebar-backdrop.is-visible { visibility: visible; opacity: 1; }
   .close-sidebar { display: grid; }
+  .collapse-sidebar, .sidebar-expand-button { display: none; }
   .main-content { width: 100%; margin-left: 0; }
   .mobile-header { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; border-bottom: 1px solid var(--line); padding: 13px 15px; }
   .mobile-header .brand { justify-self: center; }

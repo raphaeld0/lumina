@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, PanelLeftOpen } from 'lucide-react'
 import { Brand } from './components/Brand'
 import { DocumentView } from './components/DocumentView'
 import { Sidebar } from './components/Sidebar'
@@ -21,6 +21,7 @@ import type { ChatMessage, ConversationSummary, PdfDocumentData, UploadError, Up
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('lumina-sidebar-collapsed') === 'true')
   const [studentName, setStudentName] = useState(() => localStorage.getItem('lumina-student-name') || 'Estudante')
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     localStorage.getItem('lumina-theme') === 'dark' ? 'dark' : 'light',
@@ -43,6 +44,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('lumina-student-name', studentName)
   }, [studentName])
+
+  useEffect(() => {
+    localStorage.setItem('lumina-sidebar-collapsed', String(sidebarCollapsed))
+  }, [sidebarCollapsed])
 
   useEffect(() => {
     let active = true
@@ -195,11 +200,16 @@ function App() {
     <div className="app-shell">
       <Sidebar
         isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
         studentName={studentName}
         theme={theme}
         conversations={conversations}
         activeConversationId={conversationId ?? undefined}
         onClose={() => setSidebarOpen(false)}
+        onCollapse={() => {
+          setSidebarCollapsed(true)
+          setSidebarOpen(false)
+        }}
         onNewConversation={startNewConversation}
         onSelectConversation={(id) => { void openConversation(id) }}
         onRenameConversation={(id) => { void handleRenameConversation(id) }}
@@ -208,7 +218,12 @@ function App() {
         onThemeChange={setTheme}
       />
 
-      <main className="main-content">
+      <main className={`main-content ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+        {sidebarCollapsed && (
+          <button className="sidebar-expand-button" onClick={() => setSidebarCollapsed(false)} aria-label="Mostrar barra lateral" title="Mostrar barra lateral">
+            <PanelLeftOpen size={20} />
+          </button>
+        )}
         <header className="mobile-header">
           <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><Menu size={21} /></button>
           <Brand />

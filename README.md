@@ -65,6 +65,7 @@ Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo p
 - Permite adicionar novos PDFs à conversa aberta; as respostas indicam de qual documento e página veio cada fonte.
 - Permite iniciar uma nova conversa sem apagar as anteriores.
 - O menu de perfil permite personalizar o nome e alternar entre os temas claro e escuro.
+- A barra lateral pode ser recolhida no desktop para ampliar a área de estudo.
 - O chat aceita perguntas ditadas pelo microfone e pode ler as respostas da IA em voz alta.
 
 O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
