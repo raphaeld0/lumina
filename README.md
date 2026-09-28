@@ -68,6 +68,8 @@ Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo p
 - A barra lateral pode ser recolhida no desktop para ampliar a área de estudo.
 - O chat aceita perguntas ditadas pelo microfone e pode ler as respostas da IA em voz alta.
 - A aba “Ver PDF” exibe o documento original sem sair da conversa.
+- A área “Praticar” gera flashcards e simulados locais com correção, pontuação e referência às páginas utilizadas.
+- O painel lateral de ferramentas permite criar e reabrir flashcards e simulados sem sair da conversa.
 
 O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
 

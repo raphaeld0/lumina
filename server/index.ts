@@ -5,6 +5,8 @@ import express from 'express'
 import { ZodError } from 'zod'
 import { createOllamaEmbeddings, EmbeddingRequestSchema } from './embeddings.js'
 import { answerWithRag, OllamaRequestError, QueryRewriteRequestSchema, RagRequestSchema, rewriteSearchQuery } from './rag.js'
+import { generatePracticeSet, PracticeRequestSchema } from './practice.js'
+import { generateSummary, SummaryRequestSchema } from './summary.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3001
@@ -109,6 +111,42 @@ app.post('/api/chat', async (request, response) => {
       code: 'AI_REQUEST_FAILED',
       message: 'Não foi possível obter uma resposta da IA. Tente novamente em instantes.',
     })
+  }
+})
+
+app.post('/api/practice', async (request, response) => {
+  try {
+    const input = PracticeRequestSchema.parse(request.body)
+    response.json(await generatePracticeSet(ollamaBaseUrl, input, model))
+  } catch (error) {
+    if (error instanceof ZodError) {
+      response.status(400).json({ code: 'INVALID_REQUEST', message: 'Os dados enviados para criar os exercícios são inválidos.' })
+      return
+    }
+    if (error instanceof OllamaRequestError) {
+      response.status(error.code === 'MODEL_NOT_FOUND' ? 424 : 503).json({ code: error.code, message: error.message })
+      return
+    }
+    console.error('Practice request failed:', error instanceof Error ? error.message : error)
+    response.status(502).json({ code: 'PRACTICE_REQUEST_FAILED', message: 'Não foi possível criar os exercícios.' })
+  }
+})
+
+app.post('/api/summary', async (request, response) => {
+  try {
+    const input = SummaryRequestSchema.parse(request.body)
+    response.json(await generateSummary(ollamaBaseUrl, input, model))
+  } catch (error) {
+    if (error instanceof ZodError) {
+      response.status(400).json({ code: 'INVALID_REQUEST', message: 'Os trechos enviados para o resumo são inválidos.' })
+      return
+    }
+    if (error instanceof OllamaRequestError) {
+      response.status(error.code === 'MODEL_NOT_FOUND' ? 424 : 503).json({ code: error.code, message: error.message })
+      return
+    }
+    console.error('Summary request failed:', error instanceof Error ? error.message : error)
+    response.status(502).json({ code: 'SUMMARY_REQUEST_FAILED', message: 'Não foi possível criar o resumo.' })
   }
 })
 

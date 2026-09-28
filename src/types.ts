@@ -59,6 +59,44 @@ export type RagResponse = {
   sources: ChatSource[]
 }
 
+export type PracticeSource = {
+  id: string
+  documentName: string
+  pageNumber: number
+}
+
+export type FlashcardSet = {
+  kind: 'flashcards'
+  items: Array<{
+    front: string
+    back: string
+    sources: PracticeSource[]
+  }>
+}
+
+export type QuizSet = {
+  kind: 'quiz'
+  items: Array<{
+    question: string
+    options: string[]
+    correctIndex: number
+    explanation: string
+    sources: PracticeSource[]
+  }>
+}
+
+export type PracticeSet = FlashcardSet | QuizSet
+
+export type SummarySet = {
+  kind: 'summary'
+  title: string
+  summary: string
+  keyPoints: string[]
+  sources: PracticeSource[]
+}
+
+export type StudyMaterial = PracticeSet | SummarySet
+
 export type UploadStatus = 'idle' | 'restoring' | 'reading' | 'indexing' | 'ready' | 'error'
 
 export type UploadError = {

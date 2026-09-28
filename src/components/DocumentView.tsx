@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import { Check, ChevronDown, ExternalLink, FileCheck2, FilePlus2, FileQuestion, FileText, MessageCircleQuestion, RotateCcw, ScanEye, Search } from 'lucide-react'
 import type { ChatMessage, PdfDocumentData } from '../types'
 import { DocumentChat } from './DocumentChat'
+import { PracticePanel } from './PracticePanel'
+import { StudyToolsPanel } from './StudyToolsPanel'
+import { SummaryPanel } from './SummaryPanel'
+import type { PracticeHistoryEntry } from '../lib/practiceHistory'
 
 type DocumentViewProps = {
   conversationId: string
@@ -29,8 +33,11 @@ export function DocumentView({
   const [selectedDocumentId, setSelectedDocumentId] = useState(documents[0].id)
   const [selectedPage, setSelectedPage] = useState<number | 'all'>('all')
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'chat' | 'text' | 'pdf'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'practice' | 'summary' | 'text' | 'pdf'>('chat')
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [practiceKind, setPracticeKind] = useState<'flashcards' | 'quiz'>('flashcards')
+  const [restoredPractice, setRestoredPractice] = useState<PracticeHistoryEntry | null>(null)
+  const [restoredSummary, setRestoredSummary] = useState<PracticeHistoryEntry | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const document = documents.find((item) => item.id === selectedDocumentId) ?? documents[0]
   const totalChunks = documents.reduce((total, item) => total + item.chunkCount, 0)
@@ -66,15 +73,39 @@ export function DocumentView({
     setQuery('')
   }
 
+  function openPractice(kind: 'flashcards' | 'quiz') {
+    setPracticeKind(kind)
+    setRestoredPractice(null)
+    setRestoredSummary(null)
+    setActiveTab('practice')
+  }
+
+  function openSummary() {
+    setRestoredSummary(null)
+    setRestoredPractice(null)
+    setActiveTab('summary')
+  }
+
+  function openPracticeHistory(entry: PracticeHistoryEntry) {
+    if (entry.set.kind === 'summary') {
+      setRestoredSummary(entry)
+      setRestoredPractice(null)
+      setActiveTab('summary')
+    } else {
+      setPracticeKind(entry.set.kind)
+      setRestoredPractice(entry)
+      setRestoredSummary(null)
+      setActiveTab('practice')
+    }
+  }
+
   return (
     <section className="document-view">
-      <div className="document-heading">
-        <div>
-          <div className="success-label"><Check size={14} /> Material pronto</div>
-          <h1>Seus materiais estão prontos<br />para estudar.</h1>
-          <p>{documents.length} {documents.length === 1 ? 'PDF foi indexado' : 'PDFs foram indexados'} em {totalChunks} trechos.</p>
-        </div>
-        <div className="document-heading-actions">
+      <div className="study-workspace">
+        <div className="workspace-main">
+          <div className="workspace-topbar">
+            <div className="success-label"><Check size={14} /> {documents.length} {documents.length === 1 ? 'PDF pronto' : 'PDFs prontos'} · {totalChunks} trechos</div>
+            <div className="document-heading-actions">
           <input
             ref={fileInputRef}
             type="file"
@@ -92,10 +123,10 @@ export function DocumentView({
           <button className="secondary-button" onClick={onReplace}>
             <RotateCcw size={16} /> Nova conversa
           </button>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="document-card">
+          <div className="document-card">
         <div className="document-selector" aria-label="Documentos da conversa">
           {documents.map((item) => (
             <button
@@ -142,6 +173,20 @@ export function DocumentView({
             onNewConversation={onNewConversation}
           />
         </div>
+        <div hidden={activeTab !== 'practice'}>
+          <PracticePanel
+            conversationId={conversationId}
+            kind={practiceKind}
+            restoredSet={restoredPractice && restoredPractice.set.kind !== 'summary' ? restoredPractice.set : null}
+            onKindChange={openPractice}
+          />
+        </div>
+        <div hidden={activeTab !== 'summary'}>
+          <SummaryPanel
+            conversationId={conversationId}
+            restoredSummary={restoredSummary?.set.kind === 'summary' ? restoredSummary.set : null}
+          />
+        </div>
         <div hidden={activeTab !== 'text'}>
           <div className="document-toolbar">
             <label className="search-box">
@@ -184,6 +229,14 @@ export function DocumentView({
             </div>
           )}
         </div>
+      </div>
+        </div>
+        <StudyToolsPanel
+          conversationId={conversationId}
+          onCreatePractice={openPractice}
+          onCreateSummary={openSummary}
+          onOpenHistory={openPracticeHistory}
+        />
       </div>
     </section>
   )
