@@ -3,11 +3,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { ZodError } from 'zod'
-import { answerWithRag, OllamaRequestError, RagRequestSchema } from './rag.js'
+import { answerWithRag, OllamaRequestError, QueryRewriteRequestSchema, RagRequestSchema, rewriteSearchQuery } from './rag.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3001
-const model = process.env.OLLAMA_MODEL || 'qwen3.5:4b'
+const model = process.env.OLLAMA_MODEL || 'qwen3.5:0.8b'
 const ollamaBaseUrl = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
 
 app.disable('x-powered-by')
@@ -25,6 +25,33 @@ app.get('/api/health', async (_request, response) => {
     })
   } catch {
     response.json({ configured: false, provider: 'ollama', model })
+  }
+})
+
+app.post('/api/rewrite-query', async (request, response) => {
+  try {
+    const input = QueryRewriteRequestSchema.parse(request.body)
+    const searchQuery = await rewriteSearchQuery(ollamaBaseUrl, input, model)
+    response.json({ searchQuery })
+  } catch (error) {
+    if (error instanceof ZodError) {
+      response.status(400).json({ code: 'INVALID_REQUEST', message: 'Os dados enviados para a busca são inválidos.' })
+      return
+    }
+
+    if (error instanceof OllamaRequestError) {
+      response.status(error.code === 'MODEL_NOT_FOUND' ? 424 : 503).json({
+        code: error.code,
+        message: error.message,
+      })
+      return
+    }
+
+    console.error('Query rewrite failed:', error instanceof Error ? error.message : error)
+    response.status(502).json({
+      code: 'QUERY_REWRITE_FAILED',
+      message: 'Não foi possível preparar a busca com a IA. Tente novamente em instantes.',
+    })
   }
 })
 

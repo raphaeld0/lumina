@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { AlertCircle, BookOpen, Bot, LoaderCircle, Send, Sparkles, UserRound } from 'lucide-react'
-import { askDocument } from '../lib/rag'
-import { searchRelevantChunks } from '../lib/search'
+import { AlertCircle, BookOpen, Bot, LoaderCircle, MessageSquarePlus, Send, Sparkles, UserRound } from 'lucide-react'
+import { buildContextualSearchQuery, WELCOME_MESSAGE } from '../lib/conversation'
+import { askDocument, rewriteDocumentQuery } from '../lib/rag'
+import { isRewrittenQueryRelated, resolveAcronymsInQuestion, searchRelevantChunks } from '../lib/search'
 import type { ChatMessage, PdfDocumentData } from '../types'
 
 type DocumentChatProps = {
   document: PdfDocumentData
-}
-
-const INITIAL_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'assistant',
-  content: 'Olá! Já li e indexei seu material. Faça uma pergunta e responderei somente com base no documento.',
-  sufficient: true,
-  sources: [],
 }
 
 function newMessageId() {
@@ -21,7 +14,7 @@ function newMessageId() {
 }
 
 export function DocumentChat({ document }: DocumentChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
   const [question, setQuestion] = useState('')
   const [isAnswering, setIsAnswering] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -42,7 +35,19 @@ export function DocumentChat({ document }: DocumentChatProps) {
     setIsAnswering(true)
 
     try {
-      const chunks = await searchRelevantChunks(document.id, content, 5)
+      const contextualSearch = buildContextualSearchQuery(content, conversationBeforeQuestion)
+      let rewrittenQuery = contextualSearch.resolvedQuestion
+      try {
+        const candidateQuery = await rewriteDocumentQuery(contextualSearch.resolvedQuestion, conversationBeforeQuestion)
+        if (isRewrittenQueryRelated(contextualSearch.resolvedQuestion, candidateQuery)) {
+          rewrittenQuery = candidateQuery
+        }
+      } catch {
+        // A busca local continua disponível caso a reescrita não responda.
+      }
+
+      const chunks = await searchRelevantChunks(document.id, rewrittenQuery, 5)
+      const questionForModel = resolveAcronymsInQuestion(rewrittenQuery, chunks)
 
       if (chunks.length === 0) {
         setMessages((current) => [...current, {
@@ -51,17 +56,24 @@ export function DocumentChat({ document }: DocumentChatProps) {
           content: 'Não encontrei informação suficiente no material enviado para responder a essa pergunta.',
           sufficient: false,
           sources: [],
+          usedContext: contextualSearch.usedContext,
         }])
         return
       }
 
-      const result = await askDocument(content, document.name, chunks, conversationBeforeQuestion)
+      const result = await askDocument(
+        questionForModel,
+        document.name,
+        chunks,
+        conversationBeforeQuestion,
+      )
       setMessages((current) => [...current, {
         id: newMessageId(),
         role: 'assistant',
         content: result.answer,
         sufficient: result.sufficient,
         sources: result.sources,
+        usedContext: contextualSearch.usedContext,
       }])
     } catch (error) {
       setMessages((current) => [...current, {
@@ -76,6 +88,12 @@ export function DocumentChat({ document }: DocumentChatProps) {
     }
   }
 
+  function startNewConversation() {
+    if (isAnswering) return
+    setMessages([WELCOME_MESSAGE])
+    setQuestion('')
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -87,7 +105,12 @@ export function DocumentChat({ document }: DocumentChatProps) {
     <div className="document-chat">
       <div className="chat-context-bar">
         <span><Sparkles size={14} /> Respostas fundamentadas no PDF</span>
-        <span>{document.chunkCount} trechos disponíveis</span>
+        <div className="chat-context-actions">
+          <span>{document.chunkCount} trechos disponíveis</span>
+          <button type="button" onClick={startNewConversation} disabled={isAnswering}>
+            <MessageSquarePlus size={13} /> Nova conversa
+          </button>
+        </div>
       </div>
 
       <div className="chat-messages" aria-live="polite">
@@ -102,6 +125,10 @@ export function DocumentChat({ document }: DocumentChatProps) {
 
               {message.sufficient === false && (
                 <div className="insufficient-label"><AlertCircle size={13} /> Informação insuficiente no material</div>
+              )}
+
+              {message.usedContext && (
+                <div className="context-used-label"><Sparkles size={12} /> Contexto da conversa utilizado</div>
               )}
 
               {message.sources && message.sources.length > 0 && (

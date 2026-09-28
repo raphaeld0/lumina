@@ -70,9 +70,10 @@ export function DocumentView({ document, onReplace }: DocumentViewProps) {
           </button>
         </div>
 
-        {activeTab === 'chat' ? (
+        <div hidden={activeTab !== 'chat'}>
           <DocumentChat document={document} />
-        ) : (
+        </div>
+        <div hidden={activeTab !== 'text'}>
           <>
             <div className="document-toolbar">
               <label className="search-box">
@@ -111,7 +112,7 @@ export function DocumentView({ document, onReplace }: DocumentViewProps) {
               )}
             </div>
           </>
-        )}
+        </div>
       </div>
     </section>
   )

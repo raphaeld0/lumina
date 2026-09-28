@@ -40,6 +40,7 @@ export type ChatMessage = {
   content: string
   sufficient?: boolean
   sources?: ChatSource[]
+  usedContext?: boolean
 }
 
 export type RagResponse = {

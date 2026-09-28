@@ -38,18 +38,30 @@ O arquivo PDF original não é armazenado. Ao iniciar uma nova conversa, o índi
 Instale o [Ollama para Windows](https://docs.ollama.com/windows) e baixe o modelo local:
 
 ```powershell
-ollama pull qwen3.5:4b
+ollama pull qwen3.5:0.8b
 ```
 
 Depois, copie `.env.example` para um novo arquivo chamado `.env`. A configuração padrão é:
 
 ```env
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen3.5:4b
+OLLAMA_MODEL=qwen3.5:0.8b
 PORT=3001
 ```
 
-O modelo ocupa aproximadamente 3,4 GB. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
+O modelo ocupa aproximadamente 1 GB. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
+
+## Parte 4 — contexto da conversa
+
+- Mantém as perguntas, respostas e fontes durante toda a conversa atual.
+- Usa as últimas mensagens para interpretar referências como “isso” e “explique melhor”.
+- Enriquece a busca vetorial com a pergunta, a resposta e as fontes anteriores quando identifica uma continuação do assunto.
+- Expande siglas como “IA” e identifica outras abreviações a partir dos termos encontrados no documento.
+- Antes de buscar, usa o Ollama para reescrever perguntas informais em uma consulta clara; a IA não responde nessa etapa.
+- Preserva o histórico ao alternar entre o chat e o texto extraído.
+- Permite iniciar uma conversa limpa com o mesmo material ou começar outra conversa com um novo PDF.
+
+O histórico permanece apenas na memória da página e é apagado ao recarregar ou iniciar outra conversa. Por isso, ainda não é necessário adicionar um banco de dados.
 
 ## Executar
 

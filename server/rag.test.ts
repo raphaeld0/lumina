@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import test from 'node:test'
-import { answerWithRag, mapModelAnswer, type RagRequest } from './rag.js'
+import { answerWithRag, mapModelAnswer, rewriteSearchQuery, type RagRequest } from './rag.js'
 
 const request: RagRequest = {
   question: 'O que é fotossíntese?',
@@ -76,12 +76,43 @@ test('envia o RAG ao Ollama local com schema estruturado', async () => {
   assert(address && typeof address === 'object')
 
   try {
-    const result = await answerWithRag(`http://127.0.0.1:${address.port}`, request, 'qwen3.5:4b')
+    const result = await answerWithRag(`http://127.0.0.1:${address.port}`, request, 'qwen3.5:0.8b')
     assert.equal(result.sufficient, true)
     assert.equal(result.sources[0].pageNumber, 7)
-    assert.equal(receivedBody?.model, 'qwen3.5:4b')
+    assert.equal(receivedBody?.model, 'qwen3.5:0.8b')
     assert.equal(receivedBody?.stream, false)
     assert.equal(receivedBody?.think, false)
+    assert.equal(typeof receivedBody?.format, 'object')
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  }
+})
+
+test('pede ao Ollama uma consulta estruturada para a busca', async () => {
+  let receivedBody: Record<string, unknown> | undefined
+  const server = createServer((incomingRequest, outgoingResponse) => {
+    const parts: Buffer[] = []
+    incomingRequest.on('data', (part: Buffer) => parts.push(part))
+    incomingRequest.on('end', () => {
+      receivedBody = JSON.parse(Buffer.concat(parts).toString('utf8')) as Record<string, unknown>
+      outgoingResponse.writeHead(200, { 'Content-Type': 'application/json' })
+      outgoingResponse.end(JSON.stringify({
+        message: { content: JSON.stringify({ searchQuery: 'inteligência artificial definição' }) },
+      }))
+    })
+  })
+
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  assert(address && typeof address === 'object')
+
+  try {
+    const query = await rewriteSearchQuery(`http://127.0.0.1:${address.port}`, {
+      question: 'oq é IA?',
+      history: [],
+    }, 'qwen3.5:0.8b')
+    assert.equal(query, 'inteligência artificial definição')
+    assert.equal(receivedBody?.model, 'qwen3.5:0.8b')
     assert.equal(typeof receivedBody?.format, 'object')
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
