@@ -27,6 +27,27 @@ export type SearchResult = DocumentChunk & {
   score: number
 }
 
+export type ChatSource = {
+  id: string
+  documentName: string
+  pageNumber: number
+  text: string
+}
+
+export type ChatMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  sufficient?: boolean
+  sources?: ChatSource[]
+}
+
+export type RagResponse = {
+  answer: string
+  sufficient: boolean
+  sources: ChatSource[]
+}
+
 export type UploadStatus = 'idle' | 'reading' | 'indexing' | 'ready' | 'error'
 
 export type UploadError = {

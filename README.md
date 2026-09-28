@@ -23,6 +23,28 @@ O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a 
 
 O arquivo PDF original não é armazenado. Ao iniciar uma nova conversa, o índice do documento anterior é removido.
 
+## Parte 3 — respostas com RAG
+
+- Recuperação dos cinco trechos mais próximos da pergunta.
+- Envio da pergunta, histórico recente e trechos recuperados para a OpenAI.
+- Respostas limitadas às informações presentes nas fontes.
+- Retorno estruturado com indicação de evidência suficiente e IDs das fontes.
+- Exibição do documento, páginas utilizadas e texto original de cada fonte.
+- Mensagem explícita quando o material não contém informação suficiente.
+- A chave da OpenAI permanece somente no servidor.
+
+### Configurar a OpenAI
+
+Copie `.env.example` para um novo arquivo chamado `.env` e preencha:
+
+```env
+OPENAI_API_KEY=sk-sua-chave-aqui
+OPENAI_MODEL=gpt-4o-mini
+PORT=3001
+```
+
+A conta da API precisa ter créditos disponíveis. Uma assinatura do ChatGPT não inclui automaticamente créditos da API.
+
 ## Executar
 
 ```bash
@@ -30,11 +52,19 @@ npm install
 npm run dev
 ```
 
+O comando inicia a interface em `http://localhost:5173` e a API em `http://localhost:3001`.
+
 Para validar a versão de produção:
 
 ```bash
 npm run build
-npm run preview
+npm start
+```
+
+Para executar os testes dos casos com e sem resposta no material:
+
+```bash
+npm test
 ```
 
 ## Estrutura
@@ -44,10 +74,13 @@ npm run preview
 - `src/lib/embeddings.ts`: geração dos vetores e similaridade de cosseno.
 - `src/lib/vectorStore.ts`: armazenamento dos trechos no IndexedDB.
 - `src/lib/search.ts`: classificação dos trechos mais relevantes.
+- `src/lib/rag.ts`: comunicação segura entre a interface e o endpoint de RAG.
 - `src/components/UploadPanel.tsx`: envio, progresso e estados de erro.
 - `src/components/DocumentView.tsx`: conteúdo extraído, organizado por página.
-- `src/components/SemanticSearch.tsx`: perguntas e resultados da busca vetorial.
+- `src/components/DocumentChat.tsx`: conversa, respostas e fontes utilizadas.
 - `src/App.tsx`: estado da conversa atual.
+- `server/index.ts`: servidor HTTP e endpoint `/api/chat`.
+- `server/rag.ts`: prompt, Structured Output e validação das citações.
 
 ## Próximas evoluções
 

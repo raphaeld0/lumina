@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Check, ChevronDown, FileCheck2, FileText, MessageCircleQuestion, RotateCcw, Search } from 'lucide-react'
 import type { PdfDocumentData } from '../types'
-import { SemanticSearch } from './SemanticSearch'
+import { DocumentChat } from './DocumentChat'
 
 type DocumentViewProps = {
   document: PdfDocumentData
@@ -15,7 +15,7 @@ function formatSize(bytes: number) {
 export function DocumentView({ document, onReplace }: DocumentViewProps) {
   const [selectedPage, setSelectedPage] = useState<number | 'all'>('all')
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'search' | 'text'>('search')
+  const [activeTab, setActiveTab] = useState<'chat' | 'text'>('chat')
 
   const visiblePages = useMemo(() => {
     const pages = selectedPage === 'all'
@@ -53,12 +53,12 @@ export function DocumentView({ document, onReplace }: DocumentViewProps) {
 
         <div className="document-tabs" role="tablist" aria-label="Visualização do documento">
           <button
-            className={activeTab === 'search' ? 'is-active' : ''}
-            onClick={() => setActiveTab('search')}
+            className={activeTab === 'chat' ? 'is-active' : ''}
+            onClick={() => setActiveTab('chat')}
             role="tab"
-            aria-selected={activeTab === 'search'}
+            aria-selected={activeTab === 'chat'}
           >
-            <MessageCircleQuestion size={16} /> Buscar trechos
+            <MessageCircleQuestion size={16} /> Conversar com o material
           </button>
           <button
             className={activeTab === 'text' ? 'is-active' : ''}
@@ -70,8 +70,8 @@ export function DocumentView({ document, onReplace }: DocumentViewProps) {
           </button>
         </div>
 
-        {activeTab === 'search' ? (
-          <SemanticSearch document={document} />
+        {activeTab === 'chat' ? (
+          <DocumentChat document={document} />
         ) : (
           <>
             <div className="document-toolbar">
