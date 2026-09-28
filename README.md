@@ -26,24 +26,30 @@ O arquivo PDF original não é armazenado. Ao iniciar uma nova conversa, o índi
 ## Parte 3 — respostas com RAG
 
 - Recuperação dos cinco trechos mais próximos da pergunta.
-- Envio da pergunta, histórico recente e trechos recuperados para a OpenAI.
+- Envio da pergunta, histórico recente e trechos recuperados para um modelo local no Ollama.
 - Respostas limitadas às informações presentes nas fontes.
 - Retorno estruturado com indicação de evidência suficiente e IDs das fontes.
 - Exibição do documento, páginas utilizadas e texto original de cada fonte.
 - Mensagem explícita quando o material não contém informação suficiente.
-- A chave da OpenAI permanece somente no servidor.
+- Processamento local, sem chave de API e sem cobrança por tokens.
 
-### Configurar a OpenAI
+### Configurar o Ollama
 
-Copie `.env.example` para um novo arquivo chamado `.env` e preencha:
+Instale o [Ollama para Windows](https://docs.ollama.com/windows) e baixe o modelo local:
+
+```powershell
+ollama pull qwen3.5:4b
+```
+
+Depois, copie `.env.example` para um novo arquivo chamado `.env`. A configuração padrão é:
 
 ```env
-OPENAI_API_KEY=sk-sua-chave-aqui
-OPENAI_MODEL=gpt-4o-mini
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen3.5:4b
 PORT=3001
 ```
 
-A conta da API precisa ter créditos disponíveis. Uma assinatura do ChatGPT não inclui automaticamente créditos da API.
+O modelo ocupa aproximadamente 3,4 GB. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
 
 ## Executar
 
@@ -79,9 +85,9 @@ npm test
 - `src/components/DocumentView.tsx`: conteúdo extraído, organizado por página.
 - `src/components/DocumentChat.tsx`: conversa, respostas e fontes utilizadas.
 - `src/App.tsx`: estado da conversa atual.
-- `server/index.ts`: servidor HTTP e endpoint `/api/chat`.
-- `server/rag.ts`: prompt, Structured Output e validação das citações.
+- `server/index.ts`: servidor HTTP, verificação do Ollama e endpoint `/api/chat`.
+- `server/rag.ts`: integração local com o Ollama, resposta estruturada e validação das citações.
 
 ## Próximas evoluções
 
-Um backend e um banco de dados passam a ser úteis quando forem adicionados login, histórico persistente de conversas, armazenamento de arquivos ou integração com um modelo de IA. OCR também pode ser incorporado para documentos digitalizados.
+Um banco de dados passa a ser útil quando forem adicionados login, histórico persistente de conversas ou armazenamento de arquivos. OCR também pode ser incorporado para documentos digitalizados.
