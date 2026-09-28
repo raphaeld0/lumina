@@ -1,48 +1,98 @@
-# Lumina
+<div align="center">
 
-Aplicação web em React + TypeScript para transformar documentos em material de estudo.
+# ✦ Lumina
 
-## Parte 1 — leitura do documento
+### A private, local-first AI study workspace for your PDFs
 
-- Upload de vários PDFs na mesma conversa.
-- Extração local do texto, com separação e identificação por página.
-- Busca e filtro pelas páginas extraídas.
-- Tratamento de arquivo inválido, protegido, maior que 20 MB ou sem texto extraível.
-- Aviso específico para PDFs escaneados, que precisarão de OCR em uma etapa futura.
+Chat with your documents, find relevant passages, and generate summaries, flashcards, and quizzes—all powered by local AI through Ollama.
 
-O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a um servidor e nenhum banco de dados é necessário.
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111111)](https://ollama.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-6D806A.svg)](LICENSE)
 
-## Parte 2 — indexação e busca
+</div>
 
-- Divisão do texto em trechos de aproximadamente 900 caracteres, com sobreposição para preservar o contexto.
-- Cada trecho mantém a conversa, o identificador do documento, nome do arquivo, página e posição.
-- Geração local de embeddings semânticos de 768 dimensões com o modelo multilíngue `nomic-embed-text-v2-moe` no Ollama.
-- Persistência dos textos e embeddings no IndexedDB do navegador.
-- Busca dos três trechos mais relevantes entre todos os PDFs da conversa usando similaridade de cosseno.
-- Interface para fazer perguntas e visualizar página, texto e relevância de cada resultado.
+![Lumina study workspace showing a generated quiz, document navigation, and study tools](./image.png)
 
-O arquivo PDF original, o texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem somente no IndexedDB deste navegador. Isso permite visualizar o PDF novamente sem enviá-lo para um serviço externo.
+## About Lumina
 
-## Parte 3 — respostas com RAG
+Lumina turns PDF files into an interactive study workspace. Each conversation can contain multiple documents, and every answer is grounded in the material you uploaded. The app runs its language and embedding models locally, so no paid AI API is required.
 
-- Recuperação dos três trechos mais próximos da pergunta para reduzir o tempo de resposta local.
-- Envio da pergunta, histórico recente e trechos recuperados para um modelo local no Ollama.
-- Respostas limitadas às informações presentes nas fontes.
-- Retorno estruturado com indicação de evidência suficiente e IDs das fontes.
-- Exibição do documento, páginas utilizadas e texto original de cada fonte.
-- Mensagem explícita quando o material não contém informação suficiente.
-- Processamento local, sem chave de API e sem cobrança por tokens.
+The interface currently targets Brazilian Portuguese, while this documentation is maintained in English.
 
-### Configurar o Ollama
+## Highlights
 
-Instale o [Ollama para Windows](https://docs.ollama.com/windows) e baixe o modelo local:
+| Feature | What it does |
+| --- | --- |
+| Grounded document chat | Answers questions using retrieved passages from your PDFs and displays the source document and page. |
+| Multiple PDFs | Keeps several documents inside the same conversation and searches across all of them. |
+| Semantic search | Uses local embeddings to find passages by meaning instead of relying only on exact keywords. |
+| Query rewriting | Ollama rewrites informal, misspelled, or contextual questions before retrieval. |
+| Study materials | Generates topic-focused flashcards, quizzes, and summaries from the selected documents. |
+| Conversation management | Creates, searches, renames, switches, and deletes independent study conversations. |
+| Persistent history | Stores documents, messages, embeddings, and generated materials in IndexedDB. |
+| Document viewer | Lets you switch between the original PDF and page-preserving extracted text. |
+| Voice controls | Supports speech-to-text for questions and text-to-speech for AI responses. |
+| Personalization | Includes light and dark themes, a collapsible sidebar, and an editable profile name. |
+
+## How the RAG pipeline works
+
+Lumina uses Retrieval-Augmented Generation (RAG) to keep answers connected to the source material:
+
+1. A PDF is uploaded and its text is extracted page by page.
+2. The text is split into overlapping chunks while preserving the document and page references.
+3. Ollama generates an embedding for each chunk.
+4. The chunks and embeddings are stored locally in IndexedDB.
+5. When a question is submitted, the app rewrites it into a clearer search query when necessary.
+6. The question embedding is compared with the stored embeddings using cosine similarity.
+7. The most relevant passages are sent to the local language model as context.
+8. The answer is displayed with the documents and pages that supported it.
+
+If the retrieved material is not sufficient, Lumina is instructed to say so instead of inventing an answer.
+
+## Tech stack
+
+- **Frontend:** React, TypeScript, Vite, and Lucide icons
+- **Backend:** Node.js, Express, TypeScript, and Zod
+- **PDF extraction:** PDF.js
+- **Local AI:** Ollama
+- **Chat model:** `qwen3.5:0.8b` by default
+- **Embedding model:** `nomic-embed-text-v2-moe` by default
+- **Persistence:** IndexedDB in the browser
+- **Testing:** Node.js test runner through TSX
+
+## Requirements
+
+- [Node.js](https://nodejs.org/) 20 or newer
+- [Ollama](https://ollama.com/download) installed and running
+- A modern browser such as Chrome or Edge
+- Approximately 2 GB of free disk space for the default local models
+
+## Getting started
+
+### 1. Clone and install
+
+```powershell
+git clone https://github.com/raphaeld0/lumina.git
+cd lumina
+npm.cmd install
+```
+
+### 2. Download the local models
 
 ```powershell
 ollama pull qwen3.5:0.8b
 ollama pull nomic-embed-text-v2-moe
 ```
 
-Depois, copie `.env.example` para um novo arquivo chamado `.env`. A configuração padrão é:
+### 3. Create the environment file
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The default configuration is:
 
 ```env
 OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -51,69 +101,95 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text-v2-moe
 PORT=3001
 ```
 
-Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
+### 4. Start Lumina
 
-## Parte 4 — contexto da conversa
-
-- Mantém as perguntas, respostas e fontes durante toda a conversa atual.
-- Usa as últimas mensagens para interpretar referências como “isso” e “explique melhor”.
-- Enriquece a busca vetorial com a pergunta, a resposta e as fontes anteriores quando identifica uma continuação do assunto.
-- Expande siglas como “IA” e identifica outras abreviações a partir dos termos encontrados no documento.
-- Antes de buscar, usa o Ollama para reescrever perguntas informais em uma consulta clara; a IA não responde nessa etapa.
-- Preserva o histórico ao alternar entre o chat e o texto extraído ou recarregar a página.
-- Lista as conversas recentes na barra lateral e permite pesquisar, reabrir, renomear e excluir cada uma.
-- Permite adicionar novos PDFs à conversa aberta; as respostas indicam de qual documento e página veio cada fonte.
-- Permite iniciar uma nova conversa sem apagar as anteriores.
-- O menu de perfil permite personalizar o nome e alternar entre os temas claro e escuro.
-- A barra lateral pode ser recolhida no desktop para ampliar a área de estudo.
-- O chat aceita perguntas ditadas pelo microfone e pode ler as respostas da IA em voz alta.
-- A aba “Ver PDF” exibe o documento original sem sair da conversa.
-- A área “Praticar” gera flashcards e simulados locais com correção, pontuação e referência às páginas utilizadas.
-- O painel lateral de ferramentas permite criar e reabrir flashcards e simulados sem sair da conversa.
-- Antes de gerar flashcards, simulados ou resumos, um modal solicita o assunto e busca os trechos mais relevantes para ele.
-
-O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
-
-## Executar
-
-```bash
-npm install
-npm run dev
+```powershell
+npm.cmd run dev
 ```
 
-O comando inicia a interface em `http://localhost:5173` e a API em `http://localhost:3001`.
+Open [http://localhost:5173](http://localhost:5173) in your browser. The frontend and local API start together.
 
-Para validar a versão de produção:
+> **PowerShell note:** if `npm run dev` reports that `npm.ps1` cannot be executed, use `npm.cmd run dev`. This avoids changing your system execution policy.
 
-```bash
-npm run build
-npm start
+## Using the app
+
+1. Create a conversation.
+2. Upload one or more text-based PDF files.
+3. Wait for extraction and indexing to finish.
+4. Ask a question about the material, including informal or contextual follow-ups.
+5. Open the source references to verify the supporting document and page.
+6. Choose **Flashcards**, **Quiz**, or **Summary**, enter a topic such as “RAG” or “Basic concepts,” and generate a study activity.
+
+Scanned PDFs that contain only images cannot be read yet. Lumina detects this case and displays a clear limitation message instead of creating empty content.
+
+## Available commands
+
+| Command | Description |
+| --- | --- |
+| `npm.cmd run dev` | Starts the Vite frontend and Express API in development mode. |
+| `npm.cmd run build` | Creates production builds for the frontend and server. |
+| `npm.cmd start` | Starts the compiled production server. |
+| `npm.cmd test` | Runs the automated test suite. |
+| `npm.cmd run lint` | Checks the project with ESLint. |
+| `npm.cmd run preview` | Serves the frontend production build locally. |
+
+## Project structure
+
+```text
+lumina/
+├── server/
+│   ├── index.ts             # Express API and Ollama integration
+│   ├── rag.ts               # Prompt construction and grounded answers
+│   ├── practice.ts          # Flashcard and quiz generation
+│   ├── summary.ts           # Summary generation
+│   └── *.test.ts            # Server-side tests
+├── src/
+│   ├── components/          # Chat, documents, navigation, and study UI
+│   ├── lib/
+│   │   ├── pdf.ts           # Page-aware PDF extraction
+│   │   ├── search.ts        # Chunking, embeddings, and retrieval
+│   │   ├── storage.ts       # IndexedDB schema and persistence
+│   │   └── rag.ts           # Frontend RAG client
+│   ├── App.tsx
+│   └── styles.css
+├── .env.example
+└── package.json
 ```
 
-Para executar os testes dos casos com e sem resposta no material:
+## Privacy and local storage
 
-```bash
-npm test
+Documents, extracted text, embeddings, conversations, and generated study materials remain in your browser and local Ollama instance. Lumina does not require an OpenAI key or a hosted database.
+
+Browser speech recognition may use an online service provided by the browser vendor. If strict offline use is required, avoid the microphone feature. Clearing the site's browser data also removes Lumina's locally saved conversations.
+
+## Current limitations
+
+- Image-only and scanned PDFs require OCR, which is not implemented yet.
+- Local generation speed depends on your CPU, GPU, RAM, and selected Ollama model.
+- Browser data is not synchronized between devices.
+- AI output can still be imperfect; source references should be checked for important study material.
+
+## Roadmap
+
+- OCR for scanned documents
+- Import and export of conversations
+- Notes, highlights, and bookmarks
+- Direct navigation from a citation to its PDF page
+- Spaced repetition for flashcards
+- Installable PWA and offline improvements
+
+## Contributing
+
+Issues and pull requests are welcome. Before submitting a change, run:
+
+```powershell
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
 ```
 
-## Estrutura
+Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
 
-- `src/lib/pdf.ts`: validação e extração do PDF.
-- `src/lib/chunking.ts`: divisão do conteúdo com referência de página.
-- `src/lib/embeddings.ts`: cliente dos embeddings locais e similaridade de cosseno.
-- `src/lib/vectorStore.ts`: armazenamento dos trechos no IndexedDB.
-- `src/lib/conversationStore.ts`: persistência e restauração das conversas e documentos.
-- `src/lib/storage.ts`: criação e migração das tabelas locais do IndexedDB.
-- `src/lib/search.ts`: classificação dos trechos mais relevantes.
-- `src/lib/rag.ts`: comunicação segura entre a interface e o endpoint de RAG.
-- `src/components/UploadPanel.tsx`: envio, progresso e estados de erro.
-- `src/components/DocumentView.tsx`: conteúdo extraído, organizado por página.
-- `src/components/DocumentChat.tsx`: conversa, respostas e fontes utilizadas.
-- `src/App.tsx`: estado da conversa atual.
-- `server/index.ts`: servidor HTTP, verificação do Ollama e endpoints `/api/chat` e `/api/embeddings`.
-- `server/embeddings.ts`: geração dos embeddings semânticos pelo modelo multilíngue do Ollama.
-- `server/rag.ts`: integração local com o Ollama, resposta estruturada e validação das citações.
+## License
 
-## Próximas evoluções
-
-Um banco de dados online passa a ser útil quando forem adicionados login e sincronização entre dispositivos. OCR também pode ser incorporado para documentos digitalizados.
+Lumina is available under the [MIT License](LICENSE).
