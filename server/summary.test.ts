@@ -5,6 +5,7 @@ import { generateSummary, type SummaryRequest } from './summary.js'
 
 test('gera resumo estruturado preservando documento e página das fontes', async () => {
   const request: SummaryRequest = {
+    topic: 'Revolução Industrial',
     chunks: [{ id: 'c1', documentName: 'historia.pdf', pageNumber: 8, text: 'A Revolução Industrial começou na Inglaterra.' }],
   }
   const server = createServer((_incomingRequest, outgoingResponse) => {

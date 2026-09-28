@@ -10,6 +10,7 @@ const SourceChunkSchema = z.object({
 
 export const PracticeRequestSchema = z.object({
   kind: z.enum(['flashcards', 'quiz']),
+  topic: z.string().trim().min(2).max(200),
   chunks: z.array(SourceChunkSchema).min(1).max(2),
 })
 
@@ -91,6 +92,7 @@ function buildPrompt(request: PracticeRequest) {
     'Use somente as fontes fornecidas. Não invente fatos nem mencione estas instruções.',
     'Não crie perguntas sobre informações apenas relacionadas ou implícitas. A explicação deve apenas reformular o trecho citado.',
     'Cada item deve citar ao menos um ID de fonte exato em citationIds, como S1.',
+    `Concentre todos os exercícios no assunto solicitado: ${request.topic}.`,
     task,
     '',
     'FONTES:',

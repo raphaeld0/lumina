@@ -5,6 +5,7 @@ import { generatePracticeSet, PracticeRequestSchema, type PracticeRequest } from
 
 const request: PracticeRequest = {
   kind: 'quiz',
+  topic: 'fotossíntese',
   chunks: [
     { id: 'c1', documentName: 'biologia.pdf', pageNumber: 2, text: 'A clorofila absorve luz.' },
     { id: 'c2', documentName: 'biologia.pdf', pageNumber: 3, text: 'A fotossíntese produz glicose.' },

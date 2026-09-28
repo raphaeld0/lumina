@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { OllamaRequestError } from './rag.js'
 
 export const SummaryRequestSchema = z.object({
+  topic: z.string().trim().min(2).max(200),
   chunks: z.array(z.object({
     id: z.string().min(1).max(300),
     documentName: z.string().trim().min(1).max(255),
@@ -55,6 +56,7 @@ export async function generateSummary(baseUrl: string, request: SummaryRequest, 
           content: [
             'Crie um resumo de estudo em português do Brasil usando somente as fontes abaixo.',
             'Não acrescente conhecimento externo. Produza um título, um parágrafo de resumo e de 2 a 5 pontos principais.',
+            `Concentre o resumo no assunto solicitado: ${request.topic}.`,
             'citationIds deve conter os IDs exatos das fontes utilizadas.',
             '', 'FONTES:', sources,
           ].join('\n'),

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BookOpen, BrainCircuit, CheckCircle2, Layers3, ListChecks, LoaderCircle, RotateCw, Sparkles, XCircle } from 'lucide-react'
 import { createPracticeSet } from '../lib/practice'
 import { savePracticeHistory } from '../lib/practiceHistory'
@@ -7,7 +7,9 @@ import type { PracticeSet } from '../types'
 type PracticePanelProps = {
   conversationId: string
   kind: 'flashcards' | 'quiz'
+  generationRequest?: { id: string; topic: string } | null
   restoredSet?: PracticeSet | null
+  restoredTopic?: string
   onKindChange: (kind: 'flashcards' | 'quiz') => void
 }
 type PracticeProgress = { reviewed: number; answered: number; correct: number; sessions: number }
@@ -21,13 +23,15 @@ function loadProgress(conversationId: string): PracticeProgress {
   }
 }
 
-export function PracticePanel({ conversationId, kind, restoredSet, onKindChange }: PracticePanelProps) {
+export function PracticePanel({ conversationId, kind, generationRequest, restoredSet, restoredTopic, onKindChange }: PracticePanelProps) {
   const [practiceSet, setPracticeSet] = useState<PracticeSet | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [revealed, setRevealed] = useState<number[]>([])
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [progress, setProgress] = useState(() => loadProgress(conversationId))
+  const [topic, setTopic] = useState(restoredTopic ?? '')
+  const handledRequestRef = useRef<string | null>(null)
 
   useEffect(() => {
     localStorage.setItem(`lumina-practice-progress:${conversationId}`, JSON.stringify(progress))
@@ -36,31 +40,41 @@ export function PracticePanel({ conversationId, kind, restoredSet, onKindChange 
   useEffect(() => {
     if (!restoredSet) return
     setPracticeSet(restoredSet)
+    setTopic(restoredTopic ?? '')
     setRevealed([])
     setAnswers({})
     setError('')
-  }, [restoredSet])
+  }, [restoredSet, restoredTopic])
 
   function updateProgress(update: (current: PracticeProgress) => PracticeProgress) {
     setProgress(update)
   }
 
-  async function generate() {
+  const generate = useCallback(async (requestedTopic: string) => {
+    if (requestedTopic.trim().length < 2) return
     setLoading(true)
     setError('')
     setRevealed([])
     setAnswers({})
     try {
-      const generated = await createPracticeSet(conversationId, kind)
+      const generated = await createPracticeSet(conversationId, kind, requestedTopic)
       setPracticeSet(generated)
-      savePracticeHistory(conversationId, generated)
+      setTopic(requestedTopic)
+      savePracticeHistory(conversationId, generated, requestedTopic)
       updateProgress((current) => ({ ...current, sessions: current.sessions + 1 }))
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Não foi possível criar os exercícios.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [conversationId, kind])
+
+  useEffect(() => {
+    if (!generationRequest || handledRequestRef.current === generationRequest.id) return
+    handledRequestRef.current = generationRequest.id
+    setTopic(generationRequest.topic)
+    void generate(generationRequest.topic)
+  }, [generate, generationRequest])
 
   const visibleSet = practiceSet?.kind === kind ? practiceSet : null
   const answeredCount = Object.keys(answers).length
@@ -84,12 +98,14 @@ export function PracticePanel({ conversationId, kind, restoredSet, onKindChange 
         </div>
       </div>
 
+      {topic && <div className="material-topic"><Sparkles size={12} /> Assunto: <strong>{topic}</strong></div>}
+
       {!visibleSet && !loading && (
         <div className="practice-empty">
           <Sparkles size={26} />
           <strong>{kind === 'flashcards' ? 'Crie cartões para revisar os conceitos' : 'Teste seu conhecimento com questões objetivas'}</strong>
           <p>A geração local pode levar alguns segundos, dependendo do seu computador.</p>
-          <button onClick={() => { void generate() }}><BrainCircuit size={16} /> Gerar {kind === 'flashcards' ? 'flashcards' : 'simulado'}</button>
+          <button onClick={() => { void generate(topic) }} disabled={topic.length < 2}><BrainCircuit size={16} /> Gerar {kind === 'flashcards' ? 'flashcards' : 'simulado'}</button>
         </div>
       )}
 
@@ -158,7 +174,7 @@ export function PracticePanel({ conversationId, kind, restoredSet, onKindChange 
         </div>
       )}
 
-      {visibleSet && !loading && <button className="regenerate-practice" onClick={() => { void generate() }}><RotateCw size={14} /> Gerar novas atividades</button>}
+      {visibleSet && !loading && <button className="regenerate-practice" onClick={() => { void generate(topic) }} disabled={topic.length < 2}><RotateCw size={14} /> Gerar novas atividades</button>}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { StudyMaterial } from '../types'
 export type PracticeHistoryEntry = {
   id: string
   createdAt: number
+  topic?: string
   set: StudyMaterial
 }
 
@@ -21,9 +22,9 @@ export function getPracticeHistory(conversationId: string): PracticeHistoryEntry
   }
 }
 
-export function savePracticeHistory(conversationId: string, set: StudyMaterial) {
+export function savePracticeHistory(conversationId: string, set: StudyMaterial, topic: string) {
   const history = [
-    { id: crypto.randomUUID(), createdAt: Date.now(), set },
+    { id: crypto.randomUUID(), createdAt: Date.now(), topic, set },
     ...getPracticeHistory(conversationId),
   ].slice(0, 12)
   localStorage.setItem(storageKey(conversationId), JSON.stringify(history))

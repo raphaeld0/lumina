@@ -238,14 +238,11 @@ function App() {
             messages={messages}
             onMessagesChange={setMessages}
             onAddFile={(file) => { void handleFile(file) }}
-            onReplace={startNewConversation}
             onNewConversation={startNewConversation}
           />
         ) : (
           <UploadPanel status={status} error={error} progress={progress} onFile={handleFile} />
         )}
-
-        <footer className="app-footer">Feito para quem quer aprender com mais clareza.</footer>
       </main>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import { Check, ChevronDown, ExternalLink, FileCheck2, FilePlus2, FileQuestion, FileText, MessageCircleQuestion, RotateCcw, ScanEye, Search } from 'lucide-react'
+import { ChevronDown, ExternalLink, FileCheck2, FilePlus2, FileQuestion, FileText, MessageCircleQuestion, ScanEye, Search } from 'lucide-react'
 import type { ChatMessage, PdfDocumentData } from '../types'
 import { DocumentChat } from './DocumentChat'
 import { PracticePanel } from './PracticePanel'
@@ -13,9 +13,10 @@ type DocumentViewProps = {
   messages: ChatMessage[]
   onMessagesChange: Dispatch<SetStateAction<ChatMessage[]>>
   onAddFile: (file: File) => void
-  onReplace: () => void
   onNewConversation: () => void
 }
+
+type GenerationRequest = { id: string; topic: string }
 
 function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`
@@ -27,7 +28,6 @@ export function DocumentView({
   messages,
   onMessagesChange,
   onAddFile,
-  onReplace,
   onNewConversation,
 }: DocumentViewProps) {
   const [selectedDocumentId, setSelectedDocumentId] = useState(documents[0].id)
@@ -38,6 +38,8 @@ export function DocumentView({
   const [practiceKind, setPracticeKind] = useState<'flashcards' | 'quiz'>('flashcards')
   const [restoredPractice, setRestoredPractice] = useState<PracticeHistoryEntry | null>(null)
   const [restoredSummary, setRestoredSummary] = useState<PracticeHistoryEntry | null>(null)
+  const [practiceRequest, setPracticeRequest] = useState<GenerationRequest | null>(null)
+  const [summaryRequest, setSummaryRequest] = useState<GenerationRequest | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const document = documents.find((item) => item.id === selectedDocumentId) ?? documents[0]
   const totalChunks = documents.reduce((total, item) => total + item.chunkCount, 0)
@@ -73,16 +75,20 @@ export function DocumentView({
     setQuery('')
   }
 
-  function openPractice(kind: 'flashcards' | 'quiz') {
+  function openPractice(kind: 'flashcards' | 'quiz', topic: string) {
     setPracticeKind(kind)
     setRestoredPractice(null)
     setRestoredSummary(null)
+    setPracticeRequest({ id: crypto.randomUUID(), topic })
+    setSummaryRequest(null)
     setActiveTab('practice')
   }
 
-  function openSummary() {
+  function openSummary(topic: string) {
     setRestoredSummary(null)
     setRestoredPractice(null)
+    setSummaryRequest({ id: crypto.randomUUID(), topic })
+    setPracticeRequest(null)
     setActiveTab('summary')
   }
 
@@ -90,11 +96,13 @@ export function DocumentView({
     if (entry.set.kind === 'summary') {
       setRestoredSummary(entry)
       setRestoredPractice(null)
+      setSummaryRequest(null)
       setActiveTab('summary')
     } else {
       setPracticeKind(entry.set.kind)
       setRestoredPractice(entry)
       setRestoredSummary(null)
+      setPracticeRequest(null)
       setActiveTab('practice')
     }
   }
@@ -103,29 +111,6 @@ export function DocumentView({
     <section className="document-view">
       <div className="study-workspace">
         <div className="workspace-main">
-          <div className="workspace-topbar">
-            <div className="success-label"><Check size={14} /> {documents.length} {documents.length === 1 ? 'PDF pronto' : 'PDFs prontos'} · {totalChunks} trechos</div>
-            <div className="document-heading-actions">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (file) onAddFile(file)
-              event.target.value = ''
-            }}
-          />
-          <button className="secondary-button" onClick={() => fileInputRef.current?.click()}>
-            <FilePlus2 size={16} /> Adicionar PDF
-          </button>
-          <button className="secondary-button" onClick={onReplace}>
-            <RotateCcw size={16} /> Nova conversa
-          </button>
-            </div>
-          </div>
-
           <div className="document-card">
         <div className="document-selector" aria-label="Documentos da conversa">
           {documents.map((item) => (
@@ -148,7 +133,7 @@ export function DocumentView({
             <span>{formatSize(document.size)} · {document.pageCount} {document.pageCount === 1 ? 'página' : 'páginas'}</span>
           </div>
           <div className="extraction-status">
-            <FileCheck2 size={16} /> {document.chunkCount} trechos indexados
+            <FileCheck2 size={16} /> {documents.length} {documents.length === 1 ? 'PDF' : 'PDFs'} · {totalChunks} trechos
           </div>
         </div>
 
@@ -156,15 +141,31 @@ export function DocumentView({
           <button className={activeTab === 'chat' ? 'is-active' : ''} onClick={() => setActiveTab('chat')} role="tab" aria-selected={activeTab === 'chat'}>
             <MessageCircleQuestion size={16} /> Conversar com o material
           </button>
-          <button className={activeTab === 'text' ? 'is-active' : ''} onClick={() => setActiveTab('text')} role="tab" aria-selected={activeTab === 'text'}>
-            <FileText size={16} /> Texto extraído
-          </button>
           <button className={activeTab === 'pdf' ? 'is-active' : ''} onClick={() => setActiveTab('pdf')} role="tab" aria-selected={activeTab === 'pdf'}>
             <ScanEye size={16} /> Ver PDF
           </button>
+          <button className={activeTab === 'text' ? 'is-active' : ''} onClick={() => setActiveTab('text')} role="tab" aria-selected={activeTab === 'text'}>
+            <FileText size={16} /> Texto extraído
+          </button>
+          <div className="document-tab-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) onAddFile(file)
+                event.target.value = ''
+              }}
+            />
+            <button className="add-pdf-tab-button" onClick={() => fileInputRef.current?.click()}>
+              <FilePlus2 size={15} /> Adicionar PDF
+            </button>
+          </div>
         </div>
 
-        <div hidden={activeTab !== 'chat'}>
+        <div className="document-panel" hidden={activeTab !== 'chat'}>
           <DocumentChat
             conversationId={conversationId}
             documents={documents}
@@ -173,21 +174,29 @@ export function DocumentView({
             onNewConversation={onNewConversation}
           />
         </div>
-        <div hidden={activeTab !== 'practice'}>
+        <div className="document-panel" hidden={activeTab !== 'practice'}>
           <PracticePanel
             conversationId={conversationId}
             kind={practiceKind}
+            generationRequest={practiceRequest}
             restoredSet={restoredPractice && restoredPractice.set.kind !== 'summary' ? restoredPractice.set : null}
-            onKindChange={openPractice}
+            restoredTopic={restoredPractice?.topic}
+            onKindChange={(kind) => {
+              setPracticeKind(kind)
+              setPracticeRequest(null)
+              setRestoredPractice(null)
+            }}
           />
         </div>
-        <div hidden={activeTab !== 'summary'}>
+        <div className="document-panel" hidden={activeTab !== 'summary'}>
           <SummaryPanel
             conversationId={conversationId}
+            generationRequest={summaryRequest}
             restoredSummary={restoredSummary?.set.kind === 'summary' ? restoredSummary.set : null}
+            restoredTopic={restoredSummary?.topic}
           />
         </div>
-        <div hidden={activeTab !== 'text'}>
+        <div className="document-panel text-document-panel" hidden={activeTab !== 'text'}>
           <div className="document-toolbar">
             <label className="search-box">
               <Search size={16} />
@@ -212,7 +221,7 @@ export function DocumentView({
             )}
           </div>
         </div>
-        <div hidden={activeTab !== 'pdf'}>
+        <div className="document-panel" hidden={activeTab !== 'pdf'}>
           {pdfUrl ? (
             <div className="pdf-viewer">
               <div className="pdf-viewer-toolbar">
