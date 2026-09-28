@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type FormEvent, type KeyboardEvent, type SetStateAction } from 'react'
-import { AlertCircle, BookOpen, Bot, LoaderCircle, MessageSquarePlus, Send, Sparkles, UserRound } from 'lucide-react'
+import { AlertCircle, BookOpen, Bot, LoaderCircle, MessageSquarePlus, Mic, MicOff, Send, Sparkles, UserRound, Volume2, VolumeX } from 'lucide-react'
 import { buildContextualSearchQuery } from '../lib/conversation'
 import { askDocument, rewriteDocumentQuery } from '../lib/rag'
 import { isRewrittenQueryRelated, resolveAcronymsInQuestion, searchRelevantChunks } from '../lib/search'
@@ -20,11 +20,17 @@ function newMessageId() {
 export function DocumentChat({ conversationId, documents, messages, onMessagesChange: setMessages, onNewConversation }: DocumentChatProps) {
   const [question, setQuestion] = useState('')
   const [isAnswering, setIsAnswering] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [voiceError, setVoiceError] = useState('')
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isMountedRef = useRef(true)
+  const recognitionRef = useRef<LuminaSpeechRecognition | null>(null)
 
   useEffect(() => () => {
     isMountedRef.current = false
+    recognitionRef.current?.abort()
+    window.speechSynthesis?.cancel()
   }, [])
 
   useEffect(() => {
@@ -35,6 +41,7 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
     event?.preventDefault()
     const content = question.trim()
     if (content.length < 3 || isAnswering) return
+    recognitionRef.current?.stop()
 
     const userMessage: ChatMessage = { id: newMessageId(), role: 'user', content }
     const conversationBeforeQuestion = messages.filter((message) => message.id !== 'welcome')
@@ -100,8 +107,83 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
 
   function startNewConversation() {
     if (isAnswering) return
+    recognitionRef.current?.abort()
+    window.speechSynthesis?.cancel()
     setQuestion('')
     onNewConversation()
+  }
+
+  function toggleVoiceInput() {
+    setVoiceError('')
+    if (isListening) {
+      recognitionRef.current?.stop()
+      return
+    }
+
+    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition
+    if (!Recognition) {
+      setVoiceError('O reconhecimento de voz não é compatível com este navegador.')
+      return
+    }
+
+    const recognition = new Recognition()
+    const initialQuestion = question.trim()
+    recognition.lang = 'pt-BR'
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => {
+      setIsListening(false)
+      recognitionRef.current = null
+    }
+    recognition.onerror = (event) => {
+      if (event.error !== 'aborted') {
+        setVoiceError(event.error === 'not-allowed'
+          ? 'Permita o acesso ao microfone para usar a digitação por voz.'
+          : 'Não foi possível reconhecer sua voz. Tente novamente.')
+      }
+      setIsListening(false)
+    }
+    recognition.onresult = (event) => {
+      let transcript = ''
+      for (let index = 0; index < event.results.length; index += 1) {
+        transcript += event.results[index][0]?.transcript ?? ''
+      }
+      setQuestion([initialQuestion, transcript.trim()].filter(Boolean).join(' ').slice(0, 1500))
+    }
+
+    recognitionRef.current = recognition
+    try {
+      recognition.start()
+    } catch {
+      recognitionRef.current = null
+      setVoiceError('Não foi possível iniciar o microfone. Tente novamente.')
+    }
+  }
+
+  function toggleAnswerSpeech(message: ChatMessage) {
+    if (!('speechSynthesis' in window)) {
+      setVoiceError('A leitura em voz alta não é compatível com este navegador.')
+      return
+    }
+
+    if (speakingMessageId === message.id) {
+      window.speechSynthesis.cancel()
+      setSpeakingMessageId(null)
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(message.content)
+    utterance.lang = 'pt-BR'
+    utterance.rate = 0.95
+    const portugueseVoice = window.speechSynthesis.getVoices()
+      .find((voice) => voice.lang.toLowerCase().startsWith('pt-br'))
+    if (portugueseVoice) utterance.voice = portugueseVoice
+    utterance.onend = () => setSpeakingMessageId((current) => current === message.id ? null : current)
+    utterance.onerror = () => setSpeakingMessageId((current) => current === message.id ? null : current)
+    setSpeakingMessageId(message.id)
+    window.speechSynthesis.speak(utterance)
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -131,7 +213,20 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
             </span>
             <div className="message-body">
               <span className="message-author">{message.role === 'assistant' ? 'Lumina' : 'Você'}</span>
-              <p>{message.content}</p>
+              {message.role === 'assistant' ? (
+                <div className="message-answer">
+                  <p>{message.content}</p>
+                  <button
+                    type="button"
+                    className="answer-speech-button"
+                    onClick={() => toggleAnswerSpeech(message)}
+                    aria-label={speakingMessageId === message.id ? 'Parar leitura da resposta' : 'Ouvir resposta'}
+                    title={speakingMessageId === message.id ? 'Parar leitura' : 'Ouvir resposta'}
+                  >
+                    {speakingMessageId === message.id ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  </button>
+                </div>
+              ) : <p>{message.content}</p>}
 
               {message.sufficient === false && (
                 <div className="insufficient-label"><AlertCircle size={13} /> Informação insuficiente no material</div>
@@ -182,10 +277,22 @@ export function DocumentChat({ conversationId, documents, messages, onMessagesCh
           maxLength={1500}
           aria-label="Mensagem para o chat"
         />
-        <button type="submit" disabled={question.trim().length < 3 || isAnswering} aria-label="Enviar pergunta">
+        <button
+          type="button"
+          className={`voice-input-button ${isListening ? 'is-listening' : ''}`}
+          onClick={toggleVoiceInput}
+          disabled={isAnswering}
+          aria-label={isListening ? 'Parar reconhecimento de voz' : 'Digitar usando o microfone'}
+          title={isListening ? 'Parar de ouvir' : 'Usar microfone'}
+        >
+          {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+        </button>
+        <button className="send-button" type="submit" disabled={question.trim().length < 3 || isAnswering} aria-label="Enviar pergunta">
           {isAnswering ? <LoaderCircle className="search-spinner" size={18} /> : <Send size={17} />}
         </button>
-        <small>Enter para enviar · Shift + Enter para nova linha</small>
+        <small className={voiceError ? 'voice-error' : ''}>
+          {voiceError || (isListening ? 'Ouvindo… fale sua pergunta' : 'Enter para enviar · Shift + Enter para nova linha')}
+        </small>
       </form>
     </div>
   )
