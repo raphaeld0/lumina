@@ -166,7 +166,7 @@ function App() {
       }
 
       await saveChunks(indexedChunks)
-      const readyDocument = { ...extracted, chunkCount: indexedChunks.length }
+      const readyDocument = { ...extracted, chunkCount: indexedChunks.length, originalFile: file }
       const nextDocuments = [...existingDocuments, readyDocument]
       await saveStoredConversation(targetConversationId, nextDocuments, messages)
       setConversationId(targetConversationId)

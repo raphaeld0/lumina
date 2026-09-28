@@ -86,7 +86,19 @@ export async function saveConversationMessages(
   documents: PdfDocumentData[],
   messages: ChatMessage[],
 ) {
-  await saveStoredConversation(conversationId, documents, messages)
+  const database = await openStudyDatabase()
+  const existing = await getRecord(database, conversationId)
+  const transaction = database.transaction(CONVERSATIONS_STORE, 'readwrite')
+  transaction.objectStore(CONVERSATIONS_STORE).put({
+    id: conversationId,
+    documentIds: documents.map((document) => document.id),
+    documentNames: documents.map((document) => document.name),
+    customTitle: existing?.customTitle,
+    messages,
+    updatedAt: Date.now(),
+  } satisfies ConversationRecord)
+  await transactionDone(transaction)
+  database.close()
 }
 
 export async function listStoredConversations() {

@@ -172,6 +172,15 @@ button { color: inherit; }
 .page-content p.empty-page { color: #a1a49e; font-family: 'DM Sans', sans-serif; font-size: 12px; font-style: italic; }
 .no-results { display: grid; min-height: 180px; place-content: center; justify-items: center; color: #9a9d96; }
 .no-results p { margin: 8px 0 0; font-size: 13px; }
+.pdf-viewer { background: #f1f2ee; }
+.pdf-viewer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); padding: 10px 16px; color: var(--muted); font-size: 11px; }
+.pdf-viewer-toolbar span, .pdf-viewer-toolbar a { display: inline-flex; align-items: center; gap: 6px; }
+.pdf-viewer-toolbar span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-viewer-toolbar a { flex: 0 0 auto; color: var(--sage-dark); font-weight: 700; text-decoration: none; }
+.pdf-viewer iframe { display: block; width: 100%; height: min(70vh, 760px); min-height: 520px; border: 0; background: #525659; }
+.pdf-unavailable { display: grid; min-height: 420px; place-content: center; justify-items: center; padding: 32px; color: var(--muted); text-align: center; }
+.pdf-unavailable strong { margin-top: 12px; color: var(--ink); font-size: 14px; }
+.pdf-unavailable p { max-width: 390px; margin: 7px 0 0; font-size: 12px; line-height: 1.6; }
 
 .semantic-search { min-height: 390px; padding: 30px 28px 34px; }
 .question-intro { display: flex; align-items: center; gap: 13px; }
@@ -311,6 +320,7 @@ button { color: inherit; }
 [data-theme='dark'] .message-body > p,
 [data-theme='dark'] .message-answer > p { color: #d2d7cf; }
 [data-theme='dark'] .document-chat { background: #1d231d; }
+[data-theme='dark'] .pdf-viewer { background: #1b201b; }
 [data-theme='dark'] .is-user .message-body > p { background: #657d61; color: white; }
 [data-theme='dark'] .is-user .message-avatar { background: #3b3832; color: #d0c5b8; }
 [data-theme='dark'] .source-reference,
@@ -361,6 +371,8 @@ button { color: inherit; }
   .page-select { width: 100%; }
   .extraction-status { display: none; }
   .page-list { max-height: none; padding-inline: 20px; }
+  .pdf-viewer iframe { height: 65vh; min-height: 440px; }
+  .pdf-viewer-toolbar span { display: none; }
   .semantic-search { padding: 24px 18px 28px; }
   .question-intro { align-items: flex-start; }
   .question-intro p { line-height: 1.5; }

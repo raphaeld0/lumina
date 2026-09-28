@@ -11,6 +11,7 @@ export type PdfDocumentData = {
   characterCount: number
   chunkCount: number
   pages: PdfPage[]
+  originalFile?: Blob
 }
 
 export type DocumentChunk = {

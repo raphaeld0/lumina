@@ -21,7 +21,7 @@ O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a 
 - Busca dos três trechos mais relevantes entre todos os PDFs da conversa usando similaridade de cosseno.
 - Interface para fazer perguntas e visualizar página, texto e relevância de cada resultado.
 
-O arquivo PDF original não é armazenado. O texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem no IndexedDB deste navegador.
+O arquivo PDF original, o texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem somente no IndexedDB deste navegador. Isso permite visualizar o PDF novamente sem enviá-lo para um serviço externo.
 
 ## Parte 3 — respostas com RAG
 
@@ -67,6 +67,7 @@ Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo p
 - O menu de perfil permite personalizar o nome e alternar entre os temas claro e escuro.
 - A barra lateral pode ser recolhida no desktop para ampliar a área de estudo.
 - O chat aceita perguntas ditadas pelo microfone e pode ler as respostas da IA em voz alta.
+- A aba “Ver PDF” exibe o documento original sem sair da conversa.
 
 O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
 

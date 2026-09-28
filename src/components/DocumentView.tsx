@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import { Check, ChevronDown, FileCheck2, FilePlus2, FileText, MessageCircleQuestion, RotateCcw, Search } from 'lucide-react'
+import { Check, ChevronDown, ExternalLink, FileCheck2, FilePlus2, FileQuestion, FileText, MessageCircleQuestion, RotateCcw, ScanEye, Search } from 'lucide-react'
 import type { ChatMessage, PdfDocumentData } from '../types'
 import { DocumentChat } from './DocumentChat'
 
@@ -29,7 +29,8 @@ export function DocumentView({
   const [selectedDocumentId, setSelectedDocumentId] = useState(documents[0].id)
   const [selectedPage, setSelectedPage] = useState<number | 'all'>('all')
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'chat' | 'text'>('chat')
+  const [activeTab, setActiveTab] = useState<'chat' | 'text' | 'pdf'>('chat')
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const document = documents.find((item) => item.id === selectedDocumentId) ?? documents[0]
   const totalChunks = documents.reduce((total, item) => total + item.chunkCount, 0)
@@ -39,6 +40,16 @@ export function DocumentView({
       setSelectedDocumentId(documents[0].id)
     }
   }, [documents, selectedDocumentId])
+
+  useEffect(() => {
+    if (!document.originalFile) {
+      setPdfUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(document.originalFile)
+    setPdfUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [document.id, document.originalFile])
 
   const visiblePages = useMemo(() => {
     const pages = selectedPage === 'all'
@@ -117,6 +128,9 @@ export function DocumentView({
           <button className={activeTab === 'text' ? 'is-active' : ''} onClick={() => setActiveTab('text')} role="tab" aria-selected={activeTab === 'text'}>
             <FileText size={16} /> Texto extraído
           </button>
+          <button className={activeTab === 'pdf' ? 'is-active' : ''} onClick={() => setActiveTab('pdf')} role="tab" aria-selected={activeTab === 'pdf'}>
+            <ScanEye size={16} /> Ver PDF
+          </button>
         </div>
 
         <div hidden={activeTab !== 'chat'}>
@@ -152,6 +166,23 @@ export function DocumentView({
               <div className="no-results"><Search size={22} /><p>Nenhuma página contém “{query}”.</p></div>
             )}
           </div>
+        </div>
+        <div hidden={activeTab !== 'pdf'}>
+          {pdfUrl ? (
+            <div className="pdf-viewer">
+              <div className="pdf-viewer-toolbar">
+                <span><ScanEye size={15} /> Visualizando {document.name}</span>
+                <a href={pdfUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Abrir em nova aba</a>
+              </div>
+              <iframe src={`${pdfUrl}#toolbar=1&navpanes=0`} title={`PDF ${document.name}`} />
+            </div>
+          ) : (
+            <div className="pdf-unavailable">
+              <FileQuestion size={30} />
+              <strong>PDF original não disponível</strong>
+              <p>Esta conversa foi criada antes da visualização de PDFs. Adicione o arquivo novamente para poder vê-lo aqui.</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
