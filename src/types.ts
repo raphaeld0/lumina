@@ -43,13 +43,20 @@ export type ChatMessage = {
   usedContext?: boolean
 }
 
+export type ConversationSummary = {
+  id: string
+  documentName: string
+  title: string
+  updatedAt: number
+}
+
 export type RagResponse = {
   answer: string
   sufficient: boolean
   sources: ChatSource[]
 }
 
-export type UploadStatus = 'idle' | 'reading' | 'indexing' | 'ready' | 'error'
+export type UploadStatus = 'idle' | 'restoring' | 'reading' | 'indexing' | 'ready' | 'error'
 
 export type UploadError = {
   title: string

@@ -16,12 +16,12 @@ O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a 
 
 - Divisão do texto em trechos de aproximadamente 900 caracteres, com sobreposição para preservar o contexto.
 - Cada trecho mantém o identificador do documento, nome do arquivo, página e posição.
-- Geração local de embeddings vetoriais de 384 dimensões.
+- Geração local de embeddings semânticos de 768 dimensões com o modelo multilíngue `nomic-embed-text-v2-moe` no Ollama.
 - Persistência dos textos e embeddings no IndexedDB do navegador.
 - Busca dos cinco trechos mais relevantes usando similaridade de cosseno.
 - Interface para fazer perguntas e visualizar página, texto e relevância de cada resultado.
 
-O arquivo PDF original não é armazenado. Ao iniciar uma nova conversa, o índice do documento anterior é removido.
+O arquivo PDF original não é armazenado. O texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem no IndexedDB deste navegador.
 
 ## Parte 3 — respostas com RAG
 
@@ -39,6 +39,7 @@ Instale o [Ollama para Windows](https://docs.ollama.com/windows) e baixe o model
 
 ```powershell
 ollama pull qwen3.5:0.8b
+ollama pull nomic-embed-text-v2-moe
 ```
 
 Depois, copie `.env.example` para um novo arquivo chamado `.env`. A configuração padrão é:
@@ -46,10 +47,11 @@ Depois, copie `.env.example` para um novo arquivo chamado `.env`. A configuraç�
 ```env
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen3.5:0.8b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text-v2-moe
 PORT=3001
 ```
 
-O modelo ocupa aproximadamente 1 GB. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
+Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo plano e disponibiliza a API local em `http://localhost:11434`. Nenhuma pergunta ou trecho é enviado para um serviço externo. Depois de alterar o `.env`, reinicie `npm.cmd run dev`.
 
 ## Parte 4 — contexto da conversa
 
@@ -58,10 +60,11 @@ O modelo ocupa aproximadamente 1 GB. O Ollama roda em segundo plano e disponibil
 - Enriquece a busca vetorial com a pergunta, a resposta e as fontes anteriores quando identifica uma continuação do assunto.
 - Expande siglas como “IA” e identifica outras abreviações a partir dos termos encontrados no documento.
 - Antes de buscar, usa o Ollama para reescrever perguntas informais em uma consulta clara; a IA não responde nessa etapa.
-- Preserva o histórico ao alternar entre o chat e o texto extraído.
-- Permite iniciar uma conversa limpa com o mesmo material ou começar outra conversa com um novo PDF.
+- Preserva o histórico ao alternar entre o chat e o texto extraído ou recarregar a página.
+- Lista as conversas recentes na barra lateral e permite reabrir cada uma com seu documento e suas fontes.
+- Permite iniciar uma nova conversa sem apagar as anteriores.
 
-O histórico permanece apenas na memória da página e é apagado ao recarregar ou iniciar outra conversa. Por isso, ainda não é necessário adicionar um banco de dados.
+O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
 
 ## Executar
 
@@ -89,17 +92,20 @@ npm test
 
 - `src/lib/pdf.ts`: validação e extração do PDF.
 - `src/lib/chunking.ts`: divisão do conteúdo com referência de página.
-- `src/lib/embeddings.ts`: geração dos vetores e similaridade de cosseno.
+- `src/lib/embeddings.ts`: cliente dos embeddings locais e similaridade de cosseno.
 - `src/lib/vectorStore.ts`: armazenamento dos trechos no IndexedDB.
+- `src/lib/conversationStore.ts`: persistência e restauração das conversas e documentos.
+- `src/lib/storage.ts`: criação e migração das tabelas locais do IndexedDB.
 - `src/lib/search.ts`: classificação dos trechos mais relevantes.
 - `src/lib/rag.ts`: comunicação segura entre a interface e o endpoint de RAG.
 - `src/components/UploadPanel.tsx`: envio, progresso e estados de erro.
 - `src/components/DocumentView.tsx`: conteúdo extraído, organizado por página.
 - `src/components/DocumentChat.tsx`: conversa, respostas e fontes utilizadas.
 - `src/App.tsx`: estado da conversa atual.
-- `server/index.ts`: servidor HTTP, verificação do Ollama e endpoint `/api/chat`.
+- `server/index.ts`: servidor HTTP, verificação do Ollama e endpoints `/api/chat` e `/api/embeddings`.
+- `server/embeddings.ts`: geração dos embeddings semânticos pelo modelo multilíngue do Ollama.
 - `server/rag.ts`: integração local com o Ollama, resposta estruturada e validação das citações.
 
 ## Próximas evoluções
 
-Um banco de dados passa a ser útil quando forem adicionados login, histórico persistente de conversas ou armazenamento de arquivos. OCR também pode ser incorporado para documentos digitalizados.
+Um banco de dados online passa a ser útil quando forem adicionados login e sincronização entre dispositivos. OCR também pode ser incorporado para documentos digitalizados.

@@ -3,11 +3,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { ZodError } from 'zod'
+import { createOllamaEmbeddings, EmbeddingRequestSchema } from './embeddings.js'
 import { answerWithRag, OllamaRequestError, QueryRewriteRequestSchema, RagRequestSchema, rewriteSearchQuery } from './rag.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3001
 const model = process.env.OLLAMA_MODEL || 'qwen3.5:0.8b'
+const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text-v2-moe'
 const ollamaBaseUrl = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
 
 app.disable('x-powered-by')
@@ -22,9 +24,37 @@ app.get('/api/health', async (_request, response) => {
       configured: ollamaResponse.ok,
       provider: 'ollama',
       model,
+      embeddingModel,
     })
   } catch {
-    response.json({ configured: false, provider: 'ollama', model })
+    response.json({ configured: false, provider: 'ollama', model, embeddingModel })
+  }
+})
+
+app.post('/api/embeddings', async (request, response) => {
+  try {
+    const input = EmbeddingRequestSchema.parse(request.body)
+    const embeddings = await createOllamaEmbeddings(ollamaBaseUrl, input, embeddingModel)
+    response.json({ embeddings, model: embeddingModel })
+  } catch (error) {
+    if (error instanceof ZodError) {
+      response.status(400).json({ code: 'INVALID_REQUEST', message: 'Os textos enviados para indexação são inválidos.' })
+      return
+    }
+
+    if (error instanceof OllamaRequestError) {
+      response.status(error.code === 'MODEL_NOT_FOUND' ? 424 : 503).json({
+        code: error.code,
+        message: error.message,
+      })
+      return
+    }
+
+    console.error('Embedding request failed:', error instanceof Error ? error.message : error)
+    response.status(502).json({
+      code: 'EMBEDDING_REQUEST_FAILED',
+      message: 'Não foi possível gerar os embeddings locais. Tente novamente em instantes.',
+    })
   }
 })
 

@@ -1,18 +1,23 @@
 import { FileText, Menu, MessageSquareText, Plus, X } from 'lucide-react'
+import type { ConversationSummary } from '../types'
 import { Brand } from './Brand'
 
 type SidebarProps = {
   isOpen: boolean
-  documentName?: string
+  conversations: ConversationSummary[]
+  activeConversationId?: string
   onClose: () => void
   onNewConversation: () => void
+  onSelectConversation: (conversationId: string) => void
 }
 
 export function Sidebar({
   isOpen,
-  documentName,
+  conversations,
+  activeConversationId,
   onClose,
   onNewConversation,
+  onSelectConversation,
 }: SidebarProps) {
   return (
     <>
@@ -35,16 +40,23 @@ export function Sidebar({
         </button>
 
         <nav className="conversation-list" aria-label="Conversas">
-          <p className="sidebar-label">Hoje</p>
-          <button className="conversation-item is-active">
-            <MessageSquareText size={16} />
-            <span>{documentName ? 'Estudo do documento' : 'Nova conversa'}</span>
-          </button>
-          {documentName && (
-            <div className="conversation-document">
-              <FileText size={14} />
-              <span title={documentName}>{documentName}</span>
+          <p className="sidebar-label">Recentes</p>
+          {conversations.length > 0 ? conversations.map((conversation) => (
+            <div className="conversation-entry" key={conversation.id}>
+              <button
+                className={`conversation-item ${activeConversationId === conversation.id ? 'is-active' : ''}`}
+                onClick={() => onSelectConversation(conversation.id)}
+              >
+                <MessageSquareText size={16} />
+                <span title={conversation.title}>{conversation.title}</span>
+              </button>
+              <div className="conversation-document">
+                <FileText size={14} />
+                <span title={conversation.documentName}>{conversation.documentName}</span>
+              </div>
             </div>
+          )) : (
+            <div className="conversation-empty">Nenhuma conversa salva.</div>
           )}
         </nav>
 

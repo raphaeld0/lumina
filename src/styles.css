@@ -60,13 +60,15 @@ button { color: inherit; }
   transition: border-color .2s, background .2s;
 }
 .new-conversation:hover { border-color: #aeb6aa; background: white; }
-.conversation-list { margin-top: 31px; }
+.conversation-list { min-height: 0; overflow-y: auto; margin-top: 31px; padding-right: 2px; }
 .sidebar-label { margin: 0 11px 9px; color: #969991; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.conversation-entry { margin-bottom: 7px; }
 .conversation-item { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; border-radius: 9px; padding: 10px 11px; background: transparent; text-align: left; cursor: pointer; }
 .conversation-item.is-active { background: #e4e7df; }
 .conversation-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
 .conversation-document { display: flex; align-items: center; gap: 8px; margin: 8px 12px 0 21px; color: var(--muted); }
 .conversation-document span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.conversation-empty { padding: 10px 11px; color: #969991; font-size: 12px; line-height: 1.5; }
 .sidebar-footer { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin-top: auto; border-top: 1px solid #dcded6; padding: 18px 7px 0; }
 .avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: #d8ded3; color: var(--sage-dark); font-size: 13px; font-weight: 700; }
 .sidebar-footer strong, .sidebar-footer span { display: block; }

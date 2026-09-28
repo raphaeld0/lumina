@@ -1,5 +1,5 @@
 import type { DocumentChunk, SearchResult } from '../types'
-import { cosineSimilarity, createEmbedding } from './embeddings'
+import { cosineSimilarity, createEmbeddings } from './embeddings'
 import { getChunksByDocument } from './vectorStore'
 
 const IGNORED_QUERY_WORDS = new Set([
@@ -110,7 +110,7 @@ export async function searchRelevantChunks(
 ): Promise<SearchResult[]> {
   const chunks = await getChunksByDocument(documentId)
   const expandedQuestion = expandAcronymsForSearch(question, chunks)
-  const queryEmbedding = createEmbedding(expandedQuestion)
+  const [queryEmbedding] = await createEmbeddings([expandedQuestion], 'query')
 
   return chunks
     .map((chunk): SearchResult => ({

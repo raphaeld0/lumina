@@ -1,23 +1,30 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type FormEvent, type KeyboardEvent, type SetStateAction } from 'react'
 import { AlertCircle, BookOpen, Bot, LoaderCircle, MessageSquarePlus, Send, Sparkles, UserRound } from 'lucide-react'
-import { buildContextualSearchQuery, WELCOME_MESSAGE } from '../lib/conversation'
+import { buildContextualSearchQuery } from '../lib/conversation'
 import { askDocument, rewriteDocumentQuery } from '../lib/rag'
 import { isRewrittenQueryRelated, resolveAcronymsInQuestion, searchRelevantChunks } from '../lib/search'
 import type { ChatMessage, PdfDocumentData } from '../types'
 
 type DocumentChatProps = {
   document: PdfDocumentData
+  messages: ChatMessage[]
+  onMessagesChange: Dispatch<SetStateAction<ChatMessage[]>>
+  onNewConversation: () => void
 }
 
 function newMessageId() {
   return crypto.randomUUID()
 }
 
-export function DocumentChat({ document }: DocumentChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
+export function DocumentChat({ document, messages, onMessagesChange: setMessages, onNewConversation }: DocumentChatProps) {
   const [question, setQuestion] = useState('')
   const [isAnswering, setIsAnswering] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => () => {
+    isMountedRef.current = false
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -50,6 +57,7 @@ export function DocumentChat({ document }: DocumentChatProps) {
       const questionForModel = resolveAcronymsInQuestion(rewrittenQuery, chunks)
 
       if (chunks.length === 0) {
+        if (!isMountedRef.current) return
         setMessages((current) => [...current, {
           id: newMessageId(),
           role: 'assistant',
@@ -67,6 +75,7 @@ export function DocumentChat({ document }: DocumentChatProps) {
         chunks,
         conversationBeforeQuestion,
       )
+      if (!isMountedRef.current) return
       setMessages((current) => [...current, {
         id: newMessageId(),
         role: 'assistant',
@@ -76,6 +85,7 @@ export function DocumentChat({ document }: DocumentChatProps) {
         usedContext: contextualSearch.usedContext,
       }])
     } catch (error) {
+      if (!isMountedRef.current) return
       setMessages((current) => [...current, {
         id: newMessageId(),
         role: 'assistant',
@@ -84,14 +94,14 @@ export function DocumentChat({ document }: DocumentChatProps) {
         sources: [],
       }])
     } finally {
-      setIsAnswering(false)
+      if (isMountedRef.current) setIsAnswering(false)
     }
   }
 
   function startNewConversation() {
     if (isAnswering) return
-    setMessages([WELCOME_MESSAGE])
     setQuestion('')
+    onNewConversation()
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {

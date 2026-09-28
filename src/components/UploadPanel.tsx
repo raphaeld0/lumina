@@ -15,7 +15,7 @@ export function UploadPanel({ status, error, progress, onFile }: UploadPanelProp
 
   function chooseFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    if (file && status !== 'reading' && status !== 'indexing') onFile(file)
+    if (file && status !== 'restoring' && status !== 'reading' && status !== 'indexing') onFile(file)
     event.target.value = ''
   }
 
@@ -23,10 +23,10 @@ export function UploadPanel({ status, error, progress, onFile }: UploadPanelProp
     event.preventDefault()
     setIsDragging(false)
     const file = event.dataTransfer.files?.[0]
-    if (file && status !== 'reading' && status !== 'indexing') onFile(file)
+    if (file && status !== 'restoring' && status !== 'reading' && status !== 'indexing') onFile(file)
   }
 
-  const isProcessing = status === 'reading' || status === 'indexing'
+  const isProcessing = status === 'restoring' || status === 'reading' || status === 'indexing'
 
   return (
     <section className="upload-section">
@@ -46,9 +46,11 @@ export function UploadPanel({ status, error, progress, onFile }: UploadPanelProp
         {isProcessing ? (
           <>
             <div className="upload-icon loading-icon"><LoaderCircle size={27} /></div>
-            <h2>{status === 'indexing' ? 'Criando o índice de busca…' : 'Lendo seu documento…'}</h2>
+            <h2>{status === 'restoring' ? 'Restaurando suas conversas…' : status === 'indexing' ? 'Criando o índice de busca…' : 'Lendo seu documento…'}</h2>
             <p>
-              {status === 'indexing'
+              {status === 'restoring'
+                ? 'Carregando o histórico salvo neste navegador'
+                : status === 'indexing'
                 ? `Gerando embedding do trecho ${progress.current} de ${progress.total}`
                 : progress.total > 0
                   ? `Extraindo o texto da página ${progress.current} de ${progress.total}`
@@ -92,7 +94,7 @@ export function UploadPanel({ status, error, progress, onFile }: UploadPanelProp
 
       <div className="privacy-note">
         <ShieldCheck size={16} />
-        <span>Seu arquivo é processado localmente. Apenas o índice fica salvo neste navegador.</span>
+        <span>Seu PDF não é enviado. Texto, índice e conversas ficam salvos somente neste navegador.</span>
       </div>
     </section>
   )

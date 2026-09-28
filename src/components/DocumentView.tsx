@@ -1,18 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { Check, ChevronDown, FileCheck2, FileText, MessageCircleQuestion, RotateCcw, Search } from 'lucide-react'
-import type { PdfDocumentData } from '../types'
+import type { ChatMessage, PdfDocumentData } from '../types'
 import { DocumentChat } from './DocumentChat'
 
 type DocumentViewProps = {
   document: PdfDocumentData
+  messages: ChatMessage[]
+  onMessagesChange: Dispatch<SetStateAction<ChatMessage[]>>
   onReplace: () => void
+  onNewConversation: () => void
 }
 
 function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`
 }
 
-export function DocumentView({ document, onReplace }: DocumentViewProps) {
+export function DocumentView({ document, messages, onMessagesChange, onReplace, onNewConversation }: DocumentViewProps) {
   const [selectedPage, setSelectedPage] = useState<number | 'all'>('all')
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'chat' | 'text'>('chat')
@@ -71,7 +74,12 @@ export function DocumentView({ document, onReplace }: DocumentViewProps) {
         </div>
 
         <div hidden={activeTab !== 'chat'}>
-          <DocumentChat document={document} />
+          <DocumentChat
+            document={document}
+            messages={messages}
+            onMessagesChange={onMessagesChange}
+            onNewConversation={onNewConversation}
+          />
         </div>
         <div hidden={activeTab !== 'text'}>
           <>
