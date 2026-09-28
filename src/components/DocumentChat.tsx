@@ -6,7 +6,8 @@ import { isRewrittenQueryRelated, resolveAcronymsInQuestion, searchRelevantChunk
 import type { ChatMessage, PdfDocumentData } from '../types'
 
 type DocumentChatProps = {
-  document: PdfDocumentData
+  conversationId: string
+  documents: PdfDocumentData[]
   messages: ChatMessage[]
   onMessagesChange: Dispatch<SetStateAction<ChatMessage[]>>
   onNewConversation: () => void
@@ -16,7 +17,7 @@ function newMessageId() {
   return crypto.randomUUID()
 }
 
-export function DocumentChat({ document, messages, onMessagesChange: setMessages, onNewConversation }: DocumentChatProps) {
+export function DocumentChat({ conversationId, documents, messages, onMessagesChange: setMessages, onNewConversation }: DocumentChatProps) {
   const [question, setQuestion] = useState('')
   const [isAnswering, setIsAnswering] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -53,7 +54,7 @@ export function DocumentChat({ document, messages, onMessagesChange: setMessages
         // A busca local continua disponível caso a reescrita não responda.
       }
 
-      const chunks = await searchRelevantChunks(document.id, rewrittenQuery, 5)
+      const chunks = await searchRelevantChunks(conversationId, rewrittenQuery, 5)
       const questionForModel = resolveAcronymsInQuestion(rewrittenQuery, chunks)
 
       if (chunks.length === 0) {
@@ -71,7 +72,6 @@ export function DocumentChat({ document, messages, onMessagesChange: setMessages
 
       const result = await askDocument(
         questionForModel,
-        document.name,
         chunks,
         conversationBeforeQuestion,
       )
@@ -116,7 +116,7 @@ export function DocumentChat({ document, messages, onMessagesChange: setMessages
       <div className="chat-context-bar">
         <span><Sparkles size={14} /> Respostas fundamentadas no PDF</span>
         <div className="chat-context-actions">
-          <span>{document.chunkCount} trechos disponíveis</span>
+          <span>{documents.reduce((total, document) => total + document.chunkCount, 0)} trechos em {documents.length} {documents.length === 1 ? 'PDF' : 'PDFs'}</span>
           <button type="button" onClick={startNewConversation} disabled={isAnswering}>
             <MessageSquarePlus size={13} /> Nova conversa
           </button>

@@ -25,6 +25,21 @@ export async function getChunksByDocument(documentId: string): Promise<DocumentC
   return chunks
 }
 
+export async function getChunksByConversation(conversationId: string): Promise<DocumentChunk[]> {
+  const database = await openStudyDatabase()
+  const transaction = database.transaction(CHUNKS_STORE, 'readonly')
+  const index = transaction.objectStore(CHUNKS_STORE).index('conversationId')
+
+  const chunks = await new Promise<DocumentChunk[]>((resolve, reject) => {
+    const request = index.getAll(conversationId)
+    request.onsuccess = () => resolve(request.result as DocumentChunk[])
+    request.onerror = () => reject(request.error ?? new Error('Falha ao consultar os trechos da conversa.'))
+  })
+
+  database.close()
+  return chunks
+}
+
 export async function deleteChunksByDocument(documentId: string) {
   const database = await openStudyDatabase()
   const transaction = database.transaction(CHUNKS_STORE, 'readwrite')

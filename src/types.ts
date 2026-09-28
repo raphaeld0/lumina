@@ -15,6 +15,7 @@ export type PdfDocumentData = {
 
 export type DocumentChunk = {
   id: string
+  conversationId: string
   documentId: string
   documentName: string
   pageNumber: number
@@ -46,6 +47,7 @@ export type ChatMessage = {
 export type ConversationSummary = {
   id: string
   documentName: string
+  documentCount: number
   title: string
   updatedAt: number
 }

@@ -25,7 +25,6 @@ export async function rewriteDocumentQuery(question: string, history: ChatMessag
 
 export async function askDocument(
   question: string,
-  documentName: string,
   chunks: SearchResult[],
   history: ChatMessage[],
 ): Promise<RagResponse> {
@@ -34,8 +33,13 @@ export async function askDocument(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       question,
-      documentName,
-      chunks: chunks.map(({ id, pageNumber, text, score }) => ({ id, pageNumber, text, score })),
+      chunks: chunks.map(({ id, documentName, pageNumber, text, score }) => ({
+        id,
+        documentName,
+        pageNumber,
+        text,
+        score,
+      })),
       history: history.slice(-8).map(({ role, content }) => ({ role, content })),
     }),
   })

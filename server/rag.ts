@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 export const RagRequestSchema = z.object({
   question: z.string().trim().min(3).max(1500),
-  documentName: z.string().trim().min(1).max(255),
   chunks: z.array(z.object({
     id: z.string().min(1).max(300),
+    documentName: z.string().trim().min(1).max(255),
     pageNumber: z.number().int().positive(),
     text: z.string().trim().min(1).max(4000),
     score: z.number().finite(),
@@ -113,7 +113,7 @@ export function buildRagPrompt(request: RagRequest) {
 
   const sources = request.chunks.map((chunk, index) => [
     `[S${index + 1}]`,
-    `Documento: ${request.documentName}`,
+    `Documento: ${chunk.documentName}`,
     `Página: ${chunk.pageNumber}`,
     `Trecho: ${chunk.text}`,
   ].join('\n')).join('\n\n')
@@ -136,7 +136,7 @@ export function mapModelAnswer(request: RagRequest, modelAnswer: ModelAnswer) {
         const sourceId = `S${index + 1}`
         return validIds.has(sourceId) ? [{
           id: sourceId,
-          documentName: request.documentName,
+          documentName: chunk.documentName,
           pageNumber: chunk.pageNumber,
           text: chunk.text,
         }] : []

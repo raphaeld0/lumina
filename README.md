@@ -4,7 +4,7 @@ Aplicação web em React + TypeScript para transformar documentos em material de
 
 ## Parte 1 — leitura do documento
 
-- Upload de um PDF por conversa.
+- Upload de vários PDFs na mesma conversa.
 - Extração local do texto, com separação e identificação por página.
 - Busca e filtro pelas páginas extraídas.
 - Tratamento de arquivo inválido, protegido, maior que 20 MB ou sem texto extraível.
@@ -15,10 +15,10 @@ O processamento acontece no navegador. Nesta etapa, nenhum arquivo é enviado a 
 ## Parte 2 — indexação e busca
 
 - Divisão do texto em trechos de aproximadamente 900 caracteres, com sobreposição para preservar o contexto.
-- Cada trecho mantém o identificador do documento, nome do arquivo, página e posição.
+- Cada trecho mantém a conversa, o identificador do documento, nome do arquivo, página e posição.
 - Geração local de embeddings semânticos de 768 dimensões com o modelo multilíngue `nomic-embed-text-v2-moe` no Ollama.
 - Persistência dos textos e embeddings no IndexedDB do navegador.
-- Busca dos cinco trechos mais relevantes usando similaridade de cosseno.
+- Busca dos cinco trechos mais relevantes entre todos os PDFs da conversa usando similaridade de cosseno.
 - Interface para fazer perguntas e visualizar página, texto e relevância de cada resultado.
 
 O arquivo PDF original não é armazenado. O texto extraído, os embeddings e os dados necessários para reabrir cada conversa permanecem no IndexedDB deste navegador.
@@ -61,8 +61,10 @@ Os dois modelos ocupam aproximadamente 2 GB no total. O Ollama roda em segundo p
 - Expande siglas como “IA” e identifica outras abreviações a partir dos termos encontrados no documento.
 - Antes de buscar, usa o Ollama para reescrever perguntas informais em uma consulta clara; a IA não responde nessa etapa.
 - Preserva o histórico ao alternar entre o chat e o texto extraído ou recarregar a página.
-- Lista as conversas recentes na barra lateral e permite reabrir cada uma com seu documento e suas fontes.
+- Lista as conversas recentes na barra lateral e permite pesquisar, reabrir, renomear e excluir cada uma.
+- Permite adicionar novos PDFs à conversa aberta; as respostas indicam de qual documento e página veio cada fonte.
 - Permite iniciar uma nova conversa sem apagar as anteriores.
+- O menu de perfil permite personalizar o nome e alternar entre os temas claro e escuro.
 
 O histórico fica salvo somente no IndexedDB do navegador atual. Não é necessário banco de dados online; limpar os dados do site também remove as conversas locais.
 

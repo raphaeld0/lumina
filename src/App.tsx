@@ -6,7 +6,14 @@ import { Sidebar } from './components/Sidebar'
 import { UploadPanel } from './components/UploadPanel'
 import { createDocumentChunks } from './lib/chunking'
 import { WELCOME_MESSAGE } from './lib/conversation'
-import { createStoredConversation, listStoredConversations, loadStoredConversation, saveConversationMessages } from './lib/conversationStore'
+import {
+  deleteStoredConversation,
+  listStoredConversations,
+  loadStoredConversation,
+  renameStoredConversation,
+  saveConversationMessages,
+  saveStoredConversation,
+} from './lib/conversationStore'
 import { createEmbeddings } from './lib/embeddings'
 import { extractPdf, PdfReadError } from './lib/pdf'
 import { saveChunks } from './lib/vectorStore'
@@ -14,13 +21,28 @@ import type { ChatMessage, ConversationSummary, PdfDocumentData, UploadError, Up
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [studentName, setStudentName] = useState(() => localStorage.getItem('lumina-student-name') || 'Estudante')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    localStorage.getItem('lumina-theme') === 'dark' ? 'dark' : 'light',
+  )
   const [status, setStatus] = useState<UploadStatus>('restoring')
-  const [document, setDocument] = useState<PdfDocumentData | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [documents, setDocuments] = useState<PdfDocumentData[]>([])
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [storageReady, setStorageReady] = useState(false)
   const [error, setError] = useState<UploadError | null>(null)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+    localStorage.setItem('lumina-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('lumina-student-name', studentName)
+  }, [studentName])
 
   useEffect(() => {
     let active = true
@@ -34,7 +56,8 @@ function App() {
         if (summaries[0]) {
           const restored = await loadStoredConversation(summaries[0].id)
           if (active && restored) {
-            setDocument(restored.document)
+            setConversationId(restored.id)
+            setDocuments(restored.documents)
             setMessages(restored.messages.length > 0 ? restored.messages : [WELCOME_MESSAGE])
             setStatus('ready')
             return
@@ -58,18 +81,19 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!storageReady || !document || status !== 'ready') return
+    if (!storageReady || !conversationId || documents.length === 0 || status !== 'ready') return
     const timeout = window.setTimeout(() => {
-      void saveConversationMessages(document.id, document.name, messages)
+      void saveConversationMessages(conversationId, documents, messages)
         .then(listStoredConversations)
         .then(setConversations)
         .catch(() => undefined)
     }, 150)
     return () => window.clearTimeout(timeout)
-  }, [document, messages, status, storageReady])
+  }, [conversationId, documents, messages, status, storageReady])
 
   function startNewConversation() {
-    setDocument(null)
+    setConversationId(null)
+    setDocuments([])
     setMessages([WELCOME_MESSAGE])
     setError(null)
     setProgress({ current: 0, total: 0 })
@@ -77,15 +101,16 @@ function App() {
     setSidebarOpen(false)
   }
 
-  async function openConversation(conversationId: string) {
+  async function openConversation(id: string) {
     setStatus('restoring')
     setError(null)
     setSidebarOpen(false)
 
     try {
-      const restored = await loadStoredConversation(conversationId)
+      const restored = await loadStoredConversation(id)
       if (!restored) throw new Error('Esta conversa não foi encontrada no armazenamento local.')
-      setDocument(restored.document)
+      setConversationId(restored.id)
+      setDocuments(restored.documents)
       setMessages(restored.messages.length > 0 ? restored.messages : [WELCOME_MESSAGE])
       setStatus('ready')
     } catch (caughtError) {
@@ -97,17 +122,32 @@ function App() {
     }
   }
 
+  async function handleRenameConversation(id: string) {
+    const current = conversations.find((conversation) => conversation.id === id)
+    const title = window.prompt('Novo nome da conversa:', current?.title ?? '')
+    if (title === null || !title.trim()) return
+    await renameStoredConversation(id, title)
+    setConversations(await listStoredConversations())
+  }
+
+  async function handleDeleteConversation(id: string) {
+    if (!window.confirm('Excluir esta conversa, seus PDFs e todo o histórico?')) return
+    await deleteStoredConversation(id)
+    const remaining = await listStoredConversations()
+    setConversations(remaining)
+    if (conversationId === id) startNewConversation()
+  }
+
   async function handleFile(file: File) {
+    const existingDocuments = documents
+    const targetConversationId = conversationId ?? crypto.randomUUID()
     setStatus('reading')
     setError(null)
     setProgress({ current: 0, total: 0 })
 
     try {
-      const extracted = await extractPdf(file, (current, total) => {
-        setProgress({ current, total })
-      })
-
-      const rawChunks = createDocumentChunks(extracted)
+      const extracted = await extractPdf(file, (current, total) => setProgress({ current, total }))
+      const rawChunks = createDocumentChunks(extracted, targetConversationId)
       setStatus('indexing')
       setProgress({ current: 0, total: rawChunks.length })
 
@@ -122,14 +162,15 @@ function App() {
 
       await saveChunks(indexedChunks)
       const readyDocument = { ...extracted, chunkCount: indexedChunks.length }
-      await createStoredConversation(readyDocument, [WELCOME_MESSAGE])
-      setDocument(readyDocument)
-      setMessages([WELCOME_MESSAGE])
+      const nextDocuments = [...existingDocuments, readyDocument]
+      await saveStoredConversation(targetConversationId, nextDocuments, messages)
+      setConversationId(targetConversationId)
+      setDocuments(nextDocuments)
       setConversations(await listStoredConversations())
       setStatus('ready')
     } catch (caughtError) {
       const readError = caughtError instanceof PdfReadError ? caughtError : null
-      setError({
+      const uploadError = {
         title: readError?.code === 'NO_TEXT'
           ? 'Este PDF não possui texto extraível'
           : readError
@@ -139,8 +180,14 @@ function App() {
           ? 'Parece ser um documento escaneado ou composto por imagens. A leitura por OCR ainda não está disponível nesta versão.'
           : readError?.message
             ?? (caughtError instanceof Error ? caughtError.message : 'Não foi possível gerar ou armazenar os embeddings locais.'),
-      })
-      setStatus('error')
+      }
+      setError(uploadError)
+      if (existingDocuments.length > 0) {
+        window.alert(`${uploadError.title}\n\n${uploadError.message}`)
+        setStatus('ready')
+      } else {
+        setStatus('error')
+      }
     }
   }
 
@@ -148,28 +195,34 @@ function App() {
     <div className="app-shell">
       <Sidebar
         isOpen={sidebarOpen}
+        studentName={studentName}
+        theme={theme}
         conversations={conversations}
-        activeConversationId={document?.id}
+        activeConversationId={conversationId ?? undefined}
         onClose={() => setSidebarOpen(false)}
         onNewConversation={startNewConversation}
-        onSelectConversation={(conversationId) => { void openConversation(conversationId) }}
+        onSelectConversation={(id) => { void openConversation(id) }}
+        onRenameConversation={(id) => { void handleRenameConversation(id) }}
+        onDeleteConversation={(id) => { void handleDeleteConversation(id) }}
+        onStudentNameChange={setStudentName}
+        onThemeChange={setTheme}
       />
 
       <main className="main-content">
         <header className="mobile-header">
-          <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
-            <Menu size={21} />
-          </button>
+          <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><Menu size={21} /></button>
           <Brand />
           <span className="header-spacer" />
         </header>
 
-        {document && status === 'ready' ? (
+        {conversationId && documents.length > 0 && status === 'ready' ? (
           <DocumentView
-            key={document.id}
-            document={document}
+            key={conversationId}
+            conversationId={conversationId}
+            documents={documents}
             messages={messages}
             onMessagesChange={setMessages}
+            onAddFile={(file) => { void handleFile(file) }}
             onReplace={startNewConversation}
             onNewConversation={startNewConversation}
           />
@@ -177,9 +230,7 @@ function App() {
           <UploadPanel status={status} error={error} progress={progress} onFile={handleFile} />
         )}
 
-        <footer className="app-footer">
-          Feito para quem quer aprender com mais clareza.
-        </footer>
+        <footer className="app-footer">Feito para quem quer aprender com mais clareza.</footer>
       </main>
     </div>
   )

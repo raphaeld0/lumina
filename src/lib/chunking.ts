@@ -44,10 +44,14 @@ function chunkPage(text: string) {
   return chunks
 }
 
-export function createDocumentChunks(document: PdfDocumentData): Array<Omit<DocumentChunk, 'embedding'>> {
+export function createDocumentChunks(
+  document: PdfDocumentData,
+  conversationId: string,
+): Array<Omit<DocumentChunk, 'embedding'>> {
   return document.pages.flatMap((page) =>
     chunkPage(page.text).map((text, chunkIndex) => ({
       id: `${document.id}:p${page.pageNumber}:c${chunkIndex}`,
+      conversationId,
       documentId: document.id,
       documentName: document.name,
       pageNumber: page.pageNumber,

@@ -1,6 +1,6 @@
 import type { DocumentChunk, SearchResult } from '../types'
 import { cosineSimilarity, createEmbeddings } from './embeddings'
-import { getChunksByDocument } from './vectorStore'
+import { getChunksByConversation } from './vectorStore'
 
 const IGNORED_QUERY_WORDS = new Set([
   'a', 'as', 'com', 'como', 'da', 'das', 'de', 'do', 'dos', 'e', 'ela', 'ele',
@@ -104,11 +104,11 @@ export function isRewrittenQueryRelated(originalQuestion: string, rewrittenQuery
 }
 
 export async function searchRelevantChunks(
-  documentId: string,
+  conversationId: string,
   question: string,
   limit = 5,
 ): Promise<SearchResult[]> {
-  const chunks = await getChunksByDocument(documentId)
+  const chunks = await getChunksByConversation(conversationId)
   const expandedQuestion = expandAcronymsForSearch(question, chunks)
   const [queryEmbedding] = await createEmbeddings([expandedQuestion], 'query')
 

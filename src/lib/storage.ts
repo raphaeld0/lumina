@@ -1,5 +1,5 @@
 export const DATABASE_NAME = 'lumina-study'
-export const DATABASE_VERSION = 2
+export const DATABASE_VERSION = 3
 export const CHUNKS_STORE = 'chunks'
 export const DOCUMENTS_STORE = 'documents'
 export const CONVERSATIONS_STORE = 'conversations'
@@ -13,6 +13,20 @@ export function openStudyDatabase(): Promise<IDBDatabase> {
       if (!database.objectStoreNames.contains(CHUNKS_STORE)) {
         const store = database.createObjectStore(CHUNKS_STORE, { keyPath: 'id' })
         store.createIndex('documentId', 'documentId', { unique: false })
+        store.createIndex('conversationId', 'conversationId', { unique: false })
+      } else {
+        const store = request.transaction!.objectStore(CHUNKS_STORE)
+        if (!store.indexNames.contains('conversationId')) {
+          store.createIndex('conversationId', 'conversationId', { unique: false })
+          const cursorRequest = store.openCursor()
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result
+            if (!cursor) return
+            const chunk = cursor.value as { documentId: string; conversationId?: string }
+            if (!chunk.conversationId) cursor.update({ ...chunk, conversationId: chunk.documentId })
+            cursor.continue()
+          }
+        }
       }
       if (!database.objectStoreNames.contains(DOCUMENTS_STORE)) {
         database.createObjectStore(DOCUMENTS_STORE, { keyPath: 'id' })

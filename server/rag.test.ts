@@ -5,11 +5,10 @@ import { answerWithRag, mapModelAnswer, rewriteSearchQuery, type RagRequest } fr
 
 const request: RagRequest = {
   question: 'O que é fotossíntese?',
-  documentName: 'biologia.pdf',
   history: [],
   chunks: [
-    { id: 'chunk-1', pageNumber: 7, text: 'Fotossíntese converte energia luminosa em energia química.', score: 0.8 },
-    { id: 'chunk-2', pageNumber: 9, text: 'As raízes absorvem água e sais minerais.', score: 0.4 },
+    { id: 'chunk-1', documentName: 'biologia.pdf', pageNumber: 7, text: 'Fotossíntese converte energia luminosa em energia química.', score: 0.8 },
+    { id: 'chunk-2', documentName: 'botanica.pdf', pageNumber: 9, text: 'As raízes absorvem água e sais minerais.', score: 0.4 },
   ],
 }
 
@@ -22,6 +21,7 @@ test('retorna resposta e somente as páginas citadas quando há informação', (
 
   assert.equal(result.sufficient, true)
   assert.equal(result.sources.length, 1)
+  assert.equal(result.sources[0].documentName, 'biologia.pdf')
   assert.equal(result.sources[0].pageNumber, 7)
 })
 

@@ -15,3 +15,10 @@ test('usa o nome do documento antes da primeira pergunta', () => {
     'Estudo de artigo.pdf',
   )
 })
+
+test('prioriza o nome personalizado pelo estudante', () => {
+  assert.equal(
+    getConversationTitle([{ id: 'question', role: 'user', content: 'Pergunta original' }], 'artigo.pdf', 'Revisão da prova'),
+    'Revisão da prova',
+  )
+})
