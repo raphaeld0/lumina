@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# TypeScript incremental build files
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Local environment and editor files
+*.local
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
