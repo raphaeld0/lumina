@@ -189,7 +189,3 @@ npm.cmd run build
 ```
 
 Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
-
-## License
-
-Lumina is available under the [MIT License](LICENSE).
