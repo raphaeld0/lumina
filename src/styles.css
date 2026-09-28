@@ -48,7 +48,7 @@ button { color: inherit; }
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: center;
+  justify-content: center; 
   gap: 9px;
   margin-top: 34px;
   border: 1px solid #d6d8d0;
