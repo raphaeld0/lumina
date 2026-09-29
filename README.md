@@ -9,7 +9,6 @@ Chat with your documents, find relevant passages, and generate summaries, flashc
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111111)](https://ollama.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-6D806A.svg)](LICENSE)
 
 </div>
 
